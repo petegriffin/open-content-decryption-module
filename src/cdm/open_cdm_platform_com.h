@@ -34,30 +34,6 @@ enum OCDM_COM_STATE {
 
 class OpenCdmPlatformCom : public OpenCdmPlatform {
  public:
-  // NEW EME based interface
-  // on errors tear down media keys and media key session objects
-
-  // EME equivalent: new MediaKeys()
-  MediaKeysResponse MediaKeys(std::string key_system) override;
-
-  // EME equivalent: media_keys_.createSession()
-  MediaKeysCreateSessionResponse MediaKeysCreateSession(
-      const std::string& init_data_type, const uint8_t* init_data,
-      int init_data_length) override;
-
-  // EME equivalent: media_keys_.loadSession()
-  MediaKeysLoadSessionResponse MediaKeysLoadSession(
-      uint16_t *session_id_val, uint32_t session_id_len) override;
-
-  // EME equivalent: media_key_session_.update()
-  MediaKeySessionUpdateResponse MediaKeySessionUpdate(
-      const uint8 *pbKey, uint32 cbKey, uint16_t *session_id_val,
-      uint32_t session_id_len) override;
-
-  // EME equivalent: media_key_session_.release()
-  MediaKeySessionReleaseResponse MediaKeySessionRelease(
-      uint16_t *session_id_val, uint32_t session_id_len) override;
-
   ~OpenCdmPlatformCom() override{
   }
   OpenCdmPlatformCom(OpenCdmPlatformComCallbackReceiver *callback_receiver_);

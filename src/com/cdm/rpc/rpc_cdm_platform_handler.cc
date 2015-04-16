@@ -134,6 +134,7 @@ void RpcCdmPlatformHandler::OnMessage1SvcDelegate(rpc_cb_message *kmm, struct sv
 {
   CDM_DLOG() << "on_key_message_1_svc";
   p_instance->OnMessage1Svc(kmm, rqstp);
+  CDM_DLOG() << "on_key_message_1_svc(finished)";
 }
 
 void RpcCdmPlatformHandler::OnMessage1Svc(rpc_cb_message *kmm, struct svc_req *)

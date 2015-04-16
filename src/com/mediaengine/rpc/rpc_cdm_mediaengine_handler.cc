@@ -110,6 +110,7 @@ DecryptResponse RpcCdmMediaengineHandler::Decrypt(const uint8_t *pbIv,
                                                   const uint8_t *pbData,
                                                   uint32_t cbData, uint8_t *out,
                                                   uint32_t &out_size) {
+  printf("Decrypt-------\n");
   CDM_DLOG() << "RpcCdmMediaengineHandler::Decrypt: ";
   DecryptResponse response;
   response.platform_response = PLATFORM_CALL_SUCCESS;

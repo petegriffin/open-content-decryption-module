@@ -31,8 +31,8 @@ extern "C" {
 #include <libavformat/avformat.h>
   MSVC_POP_WARNING();
 }  // extern "C"
-
 #include "media/base/cdm_callback_promise.h"
+#include "media/cdm/json_web_key.h"
 #include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine_factory.h"
 #include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_factory.h"
 #include "media/cdm/ppapi/external_open_cdm/common/open_cdm_common.h"
@@ -75,6 +75,19 @@ static bool g_ffmpeg_lib_initialized = InitializeFFmpegLibraries();
 
 #endif  // OCDM_USE_FFMPEG_DECODER
 
+static media::MediaKeys::SessionType ConvertSessionType(
+    cdm::SessionType session_type) {
+  switch (session_type) {
+    case cdm::kTemporary:
+      return media::MediaKeys::TEMPORARY_SESSION;
+    case cdm::kPersistentLicense:
+      return media::MediaKeys::PERSISTENT_LICENSE_SESSION;
+    case cdm::kPersistentKeyRelease:
+      return media::MediaKeys::PERSISTENT_RELEASE_MESSAGE_SESSION;
+  }
+  NOTIMPLEMENTED();
+  return media::MediaKeys::TEMPORARY_SESSION;
+}
 // Copies |input_buffer| into a media::DecoderBuffer. If the |input_buffer| is
 // empty, an empty (end-of-stream) media::DecoderBuffer is returned.
 static scoped_refptr<media::DecoderBuffer> CopyDecoderBufferFrom(
@@ -175,7 +188,7 @@ OpenCdm::OpenCdm(OpenCdmHost* host, const std::string& key_system)
       media_engine_(NULL),
       key_system_(key_system) {
 
-  DVLOG(1) << "OpenDecryptor construct: key_system";
+  CDM_DLOG() << "OpenDecryptor construct: key_system";
   audio_decoder_state_ = cdm::kDeferredInitialization;
   video_decoder_state_ = cdm::kDeferredInitialization;
 
@@ -183,14 +196,14 @@ OpenCdm::OpenCdm(OpenCdmHost* host, const std::string& key_system)
       OpenCdmPlatformInterfaceFactory::Create(this));
 
   platform_->MediaKeys(key_system);
-  DVLOG(1) << "OpenCdm: created" << "\n";
+  CDM_DLOG() << "OpenCdm: created" << "\n";
 }
 
 OpenCdm::~OpenCdm() {
 }
 
 void OpenCdm::ReadyCallback(OpenCdmPlatformSessionId platform_session_id) {
-  DVLOG(1) << "OpenCdm::ReadyCallback";
+  CDM_DLOG() << "OpenCdm::ReadyCallback";
 
 }
 
@@ -198,25 +211,25 @@ void OpenCdm::LoadSession(uint32 promise_id,
                            cdm::SessionType session_type,
                            const char* web_session_id,
                            uint32_t web_session_id_length) {
-        DVLOG(1) << __FUNCTION__;
+        CDM_DLOG() << __FUNCTION__;
         NOTIMPLEMENTED();
 }
 
 void OpenCdm::RemoveSession(uint32 promise_id,
                                 const char* web_session_id,
                                 uint32_t web_session_id_length) {
-  DVLOG(1) << __FUNCTION__;
+  CDM_DLOG() << __FUNCTION__;
   NOTIMPLEMENTED();
 }
 void OpenCdm::ErrorCallback(OpenCdmPlatformSessionId platform_session_id,
                             uint32_t sys_err, std::string err_msg) {
-  DVLOG(1) << "OpenCdm::ErrorCallback";
+  CDM_DLOG() << "OpenCdm::ErrorCallback";
 }
 
 void OpenCdm::MessageCallback(OpenCdmPlatformSessionId platform_session_id,
                                std::string message,
                                std::string destination_url) {
-  DVLOG(1) << "OpenCdm::MessageCallback";
+  CDM_DLOG() << "OpenCdm::MessageCallback";
 }
 void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
                                                cdm::SessionType session_type,
@@ -224,7 +237,7 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
                                                uint32 init_data_type_size,
                                                const uint8* init_data,
                                                uint32 init_data_size) {
-  DVLOG(1) << " OpenCdm::CreateSession promise_id: " << promise_id
+  CDM_DLOG() << " OpenCdm::CreateSession promise_id: " << promise_id
              << " - session_type: " << session_type;
 
   scoped_ptr<media::NewSessionCdmPromise> promise(
@@ -234,7 +247,7 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
           base::Bind(&OpenCdm::OnPromiseFailed, base::Unretained(this),
                      promise_id)));
 
-  DVLOG(1) << "OpenCdmDecryptor::CreateSession";
+  CDM_DLOG() << "OpenCdmDecryptor::CreateSession";
   uint32_t renderer_session_id = next_web_session_id_++;
   std::string web_session_id = base::UintToString(renderer_session_id);
 
@@ -243,24 +256,36 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
   if (response.platform_response == PLATFORM_CALL_SUCCESS) {
     this->session_id_map[web_session_id] = response.session_id;
     std::string debug_web_session_id = GetChromeSessionId(response.session_id);
-    DVLOG(1) << "New Session promise resolved, last_session_id_: "
+    CDM_DLOG() << "New Session promise resolved, last_session_id_: "
                << web_session_id;
     promise->resolve(web_session_id);
   } else {
-    DVLOG(1) << "reject create session promise";
+    CDM_DLOG() << "reject create session promise";
     promise->reject(media::MediaKeys::INVALID_STATE_ERROR,
                     response.platform_response,
                     "MediaKeySession could not be created.");
     return;
-  }
+   }
+    /* Key request */
 
+ std::vector<uint8> message;
+ const GURL& legacy_destination_url = GURL::EmptyGURL();
+
+ if (init_data && init_data_size)
+      CreateLicenseRequest(init_data, init_data_size, ConvertSessionType(session_type), &message);
+ host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
+                        cdm::kLicenseRequest,
+                        reinterpret_cast<const char*>(message.data()),
+                        message.size(), legacy_destination_url.spec().data(),
+                        legacy_destination_url.spec().size());
+ return;
 
 }
 
 void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
                             uint32_t web_session_id_size, const uint8* response,
                             uint32 response_size) {
-  DVLOG(1) << " OpenCdm::UpdateSession for " << web_session_id;
+  CDM_DLOG() << " OpenCdm::UpdateSession for " << web_session_id;
 
   std::string web_session_str(web_session_id, web_session_id_size);
 
@@ -270,12 +295,12 @@ void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
       base::Bind(&OpenCdm::OnPromiseFailed, base::Unretained(this),
                  promise_id)));
 
-   DVLOG(1) << " OpenCdmDecryptor::UpdateSession ";
+   CDM_DLOG() << " OpenCdmDecryptor::UpdateSession ";
 
   CHECK(response);
 
-  DVLOG(1) << "UpdateSession: response_length: " << response_size;
-  DVLOG(1) << "UpdateSession: web_session_id: " << web_session_id;
+  CDM_DLOG() << "UpdateSession: response_length: " << response_size;
+  CDM_DLOG() << "UpdateSession: web_session_id: " << web_session_id;
 
   std::string key_string(reinterpret_cast<const char*>(response),
                          response_size);
@@ -306,7 +331,7 @@ void OpenCdm::CloseSession(uint32 promise_id,
                             const char* web_session_id,
                             uint32_t web_session_id_length) {
 
-  DVLOG(1) << " OpenCdm::CloseSession";
+  CDM_DLOG() << " OpenCdm::CloseSession";
   scoped_ptr<media::SimpleCdmPromise> promise(new media::CdmCallbackPromise<>(
       base::Bind(
           &OpenCdm::OnPromiseResolved, base::Unretained(this), promise_id),
@@ -331,12 +356,12 @@ void OpenCdm::CloseSession(uint32 promise_id,
 void OpenCdm::SetServerCertificate(uint32 promise_id,
                                    const uint8_t* server_certificate_data,
                                    uint32_t server_certificate_data_size) {
-  DVLOG(1) << " OpenCdm::SetServerCertificate ";
+  CDM_DLOG() << " OpenCdm::SetServerCertificate ";
   NOTIMPLEMENTED();
 }
 
 void OpenCdm::TimerExpired(void* context) {
-  DVLOG(1) << " OpenCdm::SetServerCertificate ";
+  CDM_DLOG() << " OpenCdm::SetServerCertificate ";
   NOTIMPLEMENTED();
 }
 
@@ -363,7 +388,7 @@ static void CopySubsamples(const std::vector<SubsampleEntry>& subsamples,
 
 cdm::Status OpenCdm::Decrypt(const cdm::InputBuffer& encrypted_buffer,
                              cdm::DecryptedBlock* decrypted_block) {
-  DVLOG(1) << "OpenCdm::Decrypt()";
+  CDM_DLOG() << "OpenCdm::Decrypt()";
 
   DCHECK(encrypted_buffer.data);
 
@@ -389,7 +414,7 @@ void OpenCdm::OnPromiseResolved(uint32 promise_id) {
 
 cdm::Status OpenCdm::InitializeAudioDecoder(
     const cdm::AudioDecoderConfig& audio_decoder_config) {
-  DVLOG(1) << "OpenCdm::InitializeAudioDecoder()";
+  CDM_DLOG() << "OpenCdm::InitializeAudioDecoder()";
   last_stream_type_ = cdm::kStreamTypeAudio;
 
 #if defined(OCDM_USE_FFMPEG_DECODER)
@@ -400,7 +425,7 @@ cdm::Status OpenCdm::InitializeAudioDecoder(
 
   if (!audio_decoder_->Initialize(audio_decoder_config))
   return cdm::kSessionError;
-  DVLOG(1) << "AudioDecoder initialized";
+  CDM_DLOG() << "AudioDecoder initialized";
 
   return audio_decoder_state_;
 #else
@@ -411,7 +436,7 @@ cdm::Status OpenCdm::InitializeAudioDecoder(
 
 cdm::Status OpenCdm::InitializeVideoDecoder(
     const cdm::VideoDecoderConfig& video_decoder_config) {
-  DVLOG(1) << "OpenCdm::InitializeVideoDecoder()";
+  CDM_DLOG() << "OpenCdm::InitializeVideoDecoder()";
   last_stream_type_ = cdm::kStreamTypeVideo;
 
 #if defined(OCDM_USE_FFMPEG_DECODER)
@@ -423,9 +448,9 @@ cdm::Status OpenCdm::InitializeVideoDecoder(
   video_decoder_ = CreateVideoDecoder(host_, video_decoder_config);
   if (!video_decoder_)
   return cdm::kSessionError;
-  DVLOG(1) << "VideoDecoder initialized";
+  CDM_DLOG() << "VideoDecoder initialized";
 
-  return video_decoder_state_;
+  return cdm::kSuccess;
 #else
   NOTIMPLEMENTED();
   return cdm::kSessionError;
@@ -433,7 +458,7 @@ cdm::Status OpenCdm::InitializeVideoDecoder(
 }
 
 void OpenCdm::ResetDecoder(cdm::StreamType decoder_type) {
-  DVLOG(1) << "OpenCdm::ResetDecoder()";
+  CDM_DLOG() << "OpenCdm::ResetDecoder()";
 #if defined(OCDM_USE_FFMPEG_DECODER)
   switch (decoder_type) {
     case cdm::kStreamTypeVideo:
@@ -449,7 +474,7 @@ void OpenCdm::ResetDecoder(cdm::StreamType decoder_type) {
 }
 
 void OpenCdm::DeinitializeDecoder(cdm::StreamType decoder_type) {
-  DVLOG(1) << "OpenCdm::DeinitializeDecoder()";
+  CDM_DLOG() << "OpenCdm::DeinitializeDecoder()";
   switch (decoder_type) {
 #if defined(OCDM_USE_FFMPEG_DECODER)
     case cdm::kStreamTypeVideo:
@@ -466,7 +491,7 @@ void OpenCdm::DeinitializeDecoder(cdm::StreamType decoder_type) {
 
 cdm::Status OpenCdm::DecryptAndDecodeFrame(
     const cdm::InputBuffer& encrypted_buffer, cdm::VideoFrame* decoded_frame) {
-  DVLOG(1) << "OpenCdm::DecryptAndDecodeFrame()";
+  CDM_DLOG() << "OpenCdm::DecryptAndDecodeFrame()";
 #if defined(OCDM_USE_FFMPEG_DECODER)
   scoped_refptr<media::DecoderBuffer> buffer;
   cdm::Status status = DecryptToMediaDecoderBuffer(encrypted_buffer, &buffer);
@@ -491,7 +516,7 @@ cdm::Status OpenCdm::DecryptAndDecodeFrame(
 
 cdm::Status OpenCdm::DecryptAndDecodeSamples(
     const cdm::InputBuffer& encrypted_buffer, cdm::AudioFrames* audio_frames) {
-  DVLOG(1) << "OpenCdm::DecryptAndDecodeSamples()";
+  CDM_DLOG() << "OpenCdm::DecryptAndDecodeSamples()";
 
   scoped_refptr<media::DecoderBuffer> buffer;
   cdm::Status status = DecryptToMediaDecoderBuffer(encrypted_buffer, &buffer);
@@ -516,13 +541,13 @@ cdm::Status OpenCdm::DecryptAndDecodeSamples(
 }
 
 void OpenCdm::Destroy() {
-  DVLOG(1) << "OpenCdm::Destroy()" << "\n";
+  CDM_DLOG() << "OpenCdm::Destroy()" << "\n";
   delete this;
 }
 
 OpenCdmPlatformSessionId OpenCdm::GetPlatformSessionId(
     const std::string& web_session_id) {
-  DVLOG(1) << "OpenCdm::GetPlatformSessionId" << "\n";
+  CDM_DLOG() << "OpenCdm::GetPlatformSessionId" << "\n";
 
   OpenCdmPlatformSessionId session_id;
 
@@ -535,12 +560,12 @@ OpenCdmPlatformSessionId OpenCdm::GetPlatformSessionId(
 
 std::string OpenCdm::GetChromeSessionId(
     OpenCdmPlatformSessionId platform_session_id) {
-  DVLOG(1) << "OpenCdm::GetChromeSessionId";
-  DVLOG(1) << "OpenCdm::GetChromeSessionId, sid.len: "
+  CDM_DLOG() << "OpenCdm::GetChromeSessionId";
+  CDM_DLOG() << "OpenCdm::GetChromeSessionId, sid.len: "
              << platform_session_id.session_id_len;
-  DVLOG(1) << "OpenCdm::GetChromeSessionId, sid[0]: "
+  CDM_DLOG() << "OpenCdm::GetChromeSessionId, sid[0]: "
              << platform_session_id.session_id[0];
-  DVLOG(1) << "OpenCdm::GetChromeSessionId, sid[1]: "
+  CDM_DLOG() << "OpenCdm::GetChromeSessionId, sid[1]: "
              << platform_session_id.session_id[1];
   std::string web_session_id = "";
 
@@ -568,14 +593,18 @@ std::string OpenCdm::GetChromeSessionId(
 cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
     const cdm::InputBuffer& encrypted_buffer,
     scoped_refptr<media::DecoderBuffer>* decrypted_buffer) {
-  DVLOG(1) << "OpenCdm::DecryptToMediaDecoderBuffer()";
+  CDM_DLOG() << "OpenCdm::DecryptToMediaDecoderBuffer()";
 
   DCHECK(decrypted_buffer);
+  //Fixme: We need to remove the memcopy
+  uint8_t * out = new uint8_t[encrypted_buffer.data_size];
+  uint32_t out_size = -1;
+
   scoped_refptr<media::DecoderBuffer> buffer = CopyDecoderBufferFrom(
       encrypted_buffer);
 
   if (buffer->end_of_stream()) {
-    DVLOG(1) << "#buffer->end_of_stream()";
+    CDM_DLOG() << "#buffer->end_of_stream()";
     *decrypted_buffer = buffer;
     return cdm::kSuccess;
   }
@@ -583,7 +612,7 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   // from AESDecryptor.decrypt
   // An empty iv string signals that the frame is unencrypted.
   if (buffer->decrypt_config()->iv().empty()) {
-    DVLOG(1) << "#buffer->decrypt_config()->iv().empty()";
+    CDM_DLOG() << "#buffer->decrypt_config()->iv().empty()";
     *decrypted_buffer = buffer;
     return cdm::kSuccess;
   }
@@ -594,7 +623,8 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
     OpenCdmPlatformSessionId session_id = GetPlatformSessionId(
         last_session_id_);
     media_engine_ = OpenCdmMediaengineFactory::Create(key_system_, session_id);
-    DVLOG(1) << "new MediaEngineSession instantiated";
+    if(!media_engine_)
+      return cdm::kDecryptError;
   }
 
   // from AESDecryptor.decryptData
@@ -603,38 +633,57 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   size_t sample_size = static_cast<size_t>(buffer.get()->data_size());
 
   if (sample_size == 0) {
-    DVLOG(1) << "sample_size == 0";
+    CDM_DLOG() << "sample_size == 0";
     return cdm::kDecryptError;
   }
 
   if (buffer.get()->decrypt_config()->subsamples().empty()) {
-    DVLOG(1) << "#subsamples().empty()";
-  }
+    DecryptResponse dr = media_engine_->Decrypt(encrypted_buffer.iv,
+                                              encrypted_buffer.iv_size,
+                                              encrypted_buffer.data,
+                                              sample_size,
+                                              out,
+                                              out_size);
+  //FIXME: Redundant buffer copy
+   if (dr.platform_response == PLATFORM_CALL_SUCCESS) {
+       *decrypted_buffer = DecoderBuffer::CopyFrom(reinterpret_cast<const uint8_t*>(out), out_size);
+     return cdm::kSuccess;
+   } else {
+      return cdm::kDecryptError;
+   }
+}
 
-  const std::vector<SubsampleEntry>& subsamples = buffer.get()->decrypt_config()
+  const std::vector<SubsampleEntry>& subsamples = buffer->decrypt_config()
       ->subsamples();
 
   size_t total_clear_size = 0;
   size_t total_encrypted_size = 0;
+  CDM_DLOG() << " Subsamples size: " << subsamples.size();
+
   for (size_t i = 0; i < subsamples.size(); i++) {
     total_clear_size += subsamples[i].clear_bytes;
     total_encrypted_size += subsamples[i].cypher_bytes;
     // Check for overflow. This check is valid because *_size is unsigned.
     DCHECK(total_clear_size >= subsamples[i].clear_bytes);
     if (total_encrypted_size < subsamples[i].cypher_bytes) {
-      DVLOG(1) << "#total_encrypted_size < subsamples[i].cypher_bytes";
+      CDM_DLOG() << "#total_encrypted_size < subsamples[i].cypher_bytes";
       return cdm::kDecryptError;
     }
   }
   size_t total_size = total_clear_size + total_encrypted_size;
   if (total_size < total_clear_size || total_size != sample_size) {
-    DVLOG(1) << "#Subsample sizes do not equal input size";
+    CDM_DLOG() << "#Subsample sizes do not equal input size" ;
+    CDM_DLOG() << " total_size = " << total_size
+           << " total_clear_size = " << total_clear_size
+           << " total_encrypted_size"  << total_encrypted_size
+           << " sample_size = " << sample_size;
+
     return cdm::kDecryptError;
   }
 
   // No need to decrypt if there is no encrypted data.
   if (total_encrypted_size <= 0) {
-    DVLOG(1) << "#No need to decrypt no encrypted data";
+    CDM_DLOG() << "#No need to decrypt no encrypted data";
     *decrypted_buffer = DecoderBuffer::CopyFrom(
         reinterpret_cast<const uint8*>(sample), sample_size);
     return cdm::kSuccess;
@@ -650,15 +699,13 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   CopySubsamples(subsamples, kSrcContainsClearBytes,
                  reinterpret_cast<const uint8*>(sample), encrypted_bytes.get());
 
-  uint8_t * out = new uint8_t[encrypted_buffer.data_size];
-  uint32_t out_size = -1;
 
   DecryptResponse dr = media_engine_->Decrypt(encrypted_buffer.iv,
                                               encrypted_buffer.iv_size,
                                               encrypted_bytes.get(),
                                               total_encrypted_size, out,
                                               out_size);
-  DVLOG(1) << "media_engine_->Decrypt done";
+  CDM_DLOG() << "media_engine_->Decrypt done";
 
   DCHECK_EQ(out_size, total_encrypted_size);
 
@@ -679,7 +726,7 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
 
 void OpenCdm::OnPlatformChallengeResponse(
     const cdm::PlatformChallengeResponse& response) {
-  DVLOG(1) << "OpenCdm::OnPlatformChallengeResponse";
+  CDM_DLOG() << "OpenCdm::OnPlatformChallengeResponse";
   NOTIMPLEMENTED();
 }
 
@@ -694,7 +741,7 @@ void OpenCdm::OnQueryOutputProtectionStatus(
 void OpenCdm::OnSessionMessage(const std::string& web_session_id,
                                const std::vector<uint8>& message,
                                const GURL& destination_url) {
-  DVLOG(1) << "OpenCdm::OnSessionMessage: " << web_session_id.data();
+  CDM_DLOG() << "OpenCdm::OnSessionMessage: " << web_session_id.data();
 
   // OnSessionMessage() only called during CreateSession(), so no promise
   // involved (OnSessionCreated() called to resolve the CreateSession()
@@ -706,12 +753,12 @@ void OpenCdm::OnSessionMessage(const std::string& web_session_id,
 }
 
 void OpenCdm::OnSessionReady(const std::string& web_session_id) {
-  DVLOG(1) << "OpenCdm::OnSessionReady " << web_session_id.data();
+  CDM_DLOG() << "OpenCdm::OnSessionReady " << web_session_id.data();
   host_->OnSessionReady(web_session_id.data(), web_session_id.length());
   if (last_stream_type_ == cdm::kStreamTypeAudio) {
     // TODO(ska): get stream type for session id
     if (audio_decoder_state_ == cdm::kDeferredInitialization) {
-      DVLOG(1)
+      CDM_DLOG()
           << "call host.OnDeferredInitializationDone for "
           << ((last_stream_type_ == cdm::kStreamTypeAudio) ? "audio" : "video");
       host_->OnDeferredInitializationDone(last_stream_type_, cdm::kSuccess);
@@ -719,7 +766,7 @@ void OpenCdm::OnSessionReady(const std::string& web_session_id) {
     }
   } else if (last_stream_type_ == cdm::kStreamTypeVideo) {
     if (video_decoder_state_ == cdm::kDeferredInitialization) {
-      DVLOG(1)
+      CDM_DLOG()
           << "call host.OnDeferredInitializationDone for "
           << ((last_stream_type_ == cdm::kStreamTypeAudio) ? "audio" : "video");
       host_->OnDeferredInitializationDone(last_stream_type_, cdm::kSuccess);
@@ -732,7 +779,7 @@ void OpenCdm::OnSessionError(const std::string& web_session_id,
                              MediaKeys::Exception exception_code,
                              uint32 system_code,
                              const std::string& error_message) {
-  DVLOG(1) << "OnSessionError " << web_session_id.data();
+  CDM_DLOG() << "OnSessionError " << web_session_id.data();
   // exception_code is always unknown -> kUnknownError is reported
   host_->OnSessionError(web_session_id.data(), web_session_id.length(),
                         cdm::kUnknownError, system_code, error_message.data(),
@@ -742,7 +789,7 @@ void OpenCdm::OnSessionError(const std::string& web_session_id,
 
 void OpenCdm::OnSessionCreated(uint32 promise_id,
                                const std::string& web_session_id) {
-  DVLOG(1) << "OpenCdm::OnSessionCreated";
+  CDM_DLOG() << "OpenCdm::OnSessionCreated";
   // Save the latest session ID for heartbeat and file IO test messages.
   last_session_id_ = web_session_id;
 
@@ -752,14 +799,14 @@ void OpenCdm::OnSessionCreated(uint32 promise_id,
 
 void OpenCdm::OnSessionLoaded(uint32 promise_id,
                               const std::string& web_session_id) {
-  DVLOG(1) << "OpenCdm::OnSessionLoaded";
+  CDM_DLOG() << "OpenCdm::OnSessionLoaded";
 }
 
 void OpenCdm::OnPromiseFailed(uint32 promise_id,
                               MediaKeys::Exception exception_code,
                               uint32 system_code,
                               const std::string& error_message) {
-  DVLOG(1) << "OpenCdm::OnPromiseFailed";
+  CDM_DLOG() << "OpenCdm::OnPromiseFailed";
 
   host_->OnRejectPromise(promise_id, ConvertException(exception_code),
                          system_code, error_message.data(),

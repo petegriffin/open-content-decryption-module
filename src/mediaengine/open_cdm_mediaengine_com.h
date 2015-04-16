@@ -27,10 +27,6 @@ namespace media {
                           uint8_t *auth_data_val, uint32_t auth_data_len);
     ~OpenCdmMediaengineCom() override {}
 
-    DecryptResponse Decrypt(
-      const uint8_t *pbIv, uint32_t cbIv,
-      const uint8_t *pbData, uint32_t cbData,
-      uint8_t *out, uint32_t &out_size) override;
    protected:
     OpenCdmMediaengineCom() {}
   };
