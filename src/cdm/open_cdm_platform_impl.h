@@ -41,16 +41,16 @@ class OpenCdmPlatformImpl : public OpenCdmPlatform,
 
   // EME equivalent: media_keys_.loadSession()
   MediaKeysLoadSessionResponse MediaKeysLoadSession(
-      uint16_t *session_id_val, uint32_t session_id_len) override;
+      char *session_id_val, uint32_t session_id_len) override;
 
   // EME equivalent: media_key_session_.update()
   MediaKeySessionUpdateResponse MediaKeySessionUpdate(
-      const uint8 *pbKey, uint32 cbKey, uint16_t *session_id_val,
+      const uint8 *pbKey, uint32 cbKey, char *session_id_val,
       uint32_t session_id_len) override;
 
   // EME equivalent: media_key_session_.release()
   MediaKeySessionReleaseResponse MediaKeySessionRelease(
-      uint16_t *session_id_val, uint32_t session_id_len) override;
+      char *session_id_val, uint32_t session_id_len) override;
 
   // OpenCdmComCallbackReceiver inheritance
   void ErrorCallback(OpenCdmPlatformSessionId platform_session_id,
@@ -58,6 +58,8 @@ class OpenCdmPlatformImpl : public OpenCdmPlatform,
   void MessageCallback(OpenCdmPlatformSessionId platform_session_id,
                                std::string message,
                                std::string destination_url) override;
+  void OnKeyStatuseUpdateCallback(OpenCdmPlatformSessionId platform_session_id,
+                               std::string message) override;
   void ReadyCallback(OpenCdmPlatformSessionId platform_session_id) override;
 
   ~OpenCdmPlatformImpl() override {

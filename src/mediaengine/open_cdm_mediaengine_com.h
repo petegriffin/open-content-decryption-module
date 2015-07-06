@@ -23,7 +23,7 @@ namespace media {
 
   class OpenCdmMediaengineCom : public OpenCdmMediaengine {
    public:
-    OpenCdmMediaengineCom(uint16_t *session_id_val, uint32_t session_id_len,
+    OpenCdmMediaengineCom(char *session_id_val, uint32_t session_id_len,
                           uint8_t *auth_data_val, uint32_t auth_data_len);
     ~OpenCdmMediaengineCom() override {}
 

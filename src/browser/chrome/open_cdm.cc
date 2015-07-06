@@ -22,6 +22,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "base/json/json_reader.h"
+#include "base/values.h"
 #include "media/cdm/ppapi/external_open_cdm/browser/chrome/open_cdm.h"
 
 // Include FFmpeg avformat.h for av_register_all().
@@ -32,6 +34,7 @@ extern "C" {
   MSVC_POP_WARNING();
 }  // extern "C"
 #include "media/base/cdm_callback_promise.h"
+#include "media/cdm/cenc_utils.h"
 #include "media/cdm/json_web_key.h"
 #include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine_factory.h"
 #include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_factory.h"
@@ -39,6 +42,7 @@ extern "C" {
 
 #include "media/cdm/ppapi/cdm_logging.h"
 #include "base/bind.h"
+#include "media/base/cdm_key_information.h"
 #include "media/base/cdm_promise.h"
 #include "media/base/decoder_buffer.h"
 #include "media/base/decrypt_config.h"
@@ -51,7 +55,16 @@ extern "C" {
 #include "base/path_service.h"
 #include "media/base/media.h"
 
+// Renewal message header. For prefixed EME, if a key message starts with
+// |kRenewalHeader|, it's a renewal message. Otherwise, it's a key request.
+// FIXME(jrummell): Remove this once prefixed EME goes away.
+const char kRenewalHeader[] = "RENEWAL";
 
+const int64 kSecondsPerMinute = 60;
+const int64 kMsPerSecond = 1000;
+const int64 kInitialTimerDelayMs = 200;
+const int64 kMaxTimerDelayMs = 1 * kSecondsPerMinute * kMsPerSecond;
+//const unsigned int kMaxOpenCDMSessionCount = 1;
 
 // TODO(tomfinegan): When COMPONENT_BUILD is not defined an AtExitManager must
 // exist before the call to InitializeFFmpegLibraries(). This should no longer
@@ -154,7 +167,41 @@ static cdm::Error ConvertException(media::MediaKeys::Exception exception_code) {
   NOTIMPLEMENTED();
   return cdm::kUnknownError;
 }
-
+  cdm::KeyStatus ConvertKeyStatus(media::CdmKeyInformation::KeyStatus status) {
+    switch (status) {
+      case media::CdmKeyInformation::KeyStatus::USABLE:
+        {
+        return cdm::kUsable;
+         }
+      case media::CdmKeyInformation::KeyStatus::INTERNAL_ERROR:
+        return cdm::kInternalError;
+      case media::CdmKeyInformation::KeyStatus::EXPIRED:
+        return cdm::kExpired;
+      case media::CdmKeyInformation::KeyStatus::OUTPUT_NOT_ALLOWED:
+        return cdm::kOutputNotAllowed;
+      case media::CdmKeyInformation::KeyStatus::OUTPUT_DOWNSCALED:
+        return cdm::kOutputDownscaled;
+      case media::CdmKeyInformation::KeyStatus::KEY_STATUS_PENDING:
+        return cdm::kStatusPending;
+    }
+    NOTREACHED();
+    return cdm::kInternalError;
+  }
+  // Shallow copy all the key information from |keys_info| into |keys_vector|.
+  // |keys_vector| is only valid for the lifetime of |keys_info| because it
+  // contains pointers into the latter.
+  void ConvertCdmKeysInfo(const std::vector<media::CdmKeyInformation*>& keys_info,
+                          std::vector<cdm::KeyInformation>* keys_vector) {
+    keys_vector->reserve(keys_info.size());
+    for (const auto& key_info : keys_info) {
+      cdm::KeyInformation key;
+      key.key_id = vector_as_array(&key_info->key_id);
+      key.key_id_size = key_info->key_id.size();
+      key.status = ConvertKeyStatus(key_info->status);
+      key.system_code = key_info->system_code;
+      keys_vector->push_back(key);
+    }
+  }
 void* CreateCdmInstance(int cdm_interface_version, const char* key_system,
                         uint32_t key_system_size,
                         GetCdmHostFunc get_cdm_host_func, void* user_data) {
@@ -181,12 +228,29 @@ const char* GetCdmVersion() {
 
 namespace media {
 
+static std::string ConvertInitDataType(
+    cdm::InitDataType init_data_type) {
+  switch (init_data_type) {
+    case cdm::kCenc:
+      return "InitDataType::CENC";
+    case cdm::kKeyIds:
+      return "InitDataType::KEYIDS";
+    case cdm::kWebM:
+      return "InitDataType::WEBM";
+  }
+  NOTREACHED();
+  return "InitDataType::UNKNOWN";
+}
+
 static uint32_t next_web_session_id_ = 1;
 
 OpenCdm::OpenCdm(OpenCdmHost* host, const std::string& key_system)
     : host_(host),
       media_engine_(NULL),
-      key_system_(key_system) {
+      key_system_(key_system),
+      timer_delay_ms_(kInitialTimerDelayMs),
+      renewal_timer_set_(false)
+  {
 
   CDM_DLOG() << "OpenDecryptor construct: key_system";
   audio_decoder_state_ = cdm::kDeferredInitialization;
@@ -221,6 +285,7 @@ void OpenCdm::RemoveSession(uint32 promise_id,
   CDM_DLOG() << __FUNCTION__;
   NOTIMPLEMENTED();
 }
+
 void OpenCdm::ErrorCallback(OpenCdmPlatformSessionId platform_session_id,
                             uint32_t sys_err, std::string err_msg) {
   CDM_DLOG() << "OpenCdm::ErrorCallback";
@@ -231,10 +296,88 @@ void OpenCdm::MessageCallback(OpenCdmPlatformSessionId platform_session_id,
                                std::string destination_url) {
   CDM_DLOG() << "OpenCdm::MessageCallback";
 }
+
+void OpenCdm::OnKeyStatuseUpdateCallback(OpenCdmPlatformSessionId platform_session_id,
+                               std::string message)
+{
+  scoped_ptr<base::Value> root(base::JSONReader().ReadToValue(message));
+
+
+  if (!root.get() || root->GetType() != base::Value::TYPE_DICTIONARY) {
+    return;
+  }
+  base::DictionaryValue* dict =
+      static_cast<base::DictionaryValue*>(root.get());
+   CDM_DLOG() << *dict;
+  CdmKeysInfo keys_info;
+  for (base::DictionaryValue::Iterator itr(*dict); !itr.IsAtEnd();
+           itr.Advance())
+  {
+    scoped_ptr<CdmKeyInformation> key_info(new CdmKeyInformation);
+    key_info->key_id.assign(itr.key().begin(), itr.key().end());
+
+    /* FIXME: We ignore returned key statuses. Set all keys usable.
+     * We have to pull in the key status defines from cdmi.h to
+     * process the returned key states properly.
+     */
+
+    key_info->status = CdmKeyInformation::USABLE;
+    key_info->system_code = 0;
+    keys_info.push_back(key_info.release());
+  }
+
+  std::string session_id;
+
+  /* FIXME:  We should not use a web_session_id -> opencdm web session mapping.
+   * This mapping needs to be completely removed.
+   * See RFC:
+   * https://groups.google.com/forum/#!topic/opencdm/aETKDgwrJdU
+   */
+  bool session_id_found = false;
+
+  for( std::map<std::string, OpenCdmPlatformSessionId>::iterator itr = session_id_map.begin();
+      itr!=session_id_map.end(); itr++)
+  {
+    OpenCdmPlatformSessionId *id = &(itr->second);
+    if(strncmp(id->session_id, platform_session_id.session_id, id->session_id_len) == 0)
+    {
+      session_id_found = true;
+      session_id = itr->first;
+    }
+  }
+
+  if(!session_id_found) {
+    CDM_DLOG() << "Unable to find session_id " <<
+      std::string(platform_session_id.session_id, platform_session_id.session_id_len) <<
+      "in  web session map";
+    return;
+  }
+
+  OnSessionKeysUpdate(session_id, true, keys_info.Pass());
+  CDM_DLOG() << "Got key status update : %s:" << message;
+}
+
+void OpenCdm::OnSessionKeysUpdate(const std::string& session_id,
+                                        bool has_additional_usable_key,
+                                        CdmKeysInfo keys_info) {
+    std::string new_session_id = session_id;
+
+    std::vector<cdm::KeyInformation> keys_vector;
+    ConvertCdmKeysInfo(keys_info.get(), &keys_vector);
+    host_->OnSessionKeysChange(new_session_id.data(), new_session_id.length(),
+                               has_additional_usable_key,
+                               vector_as_array(&keys_vector), keys_vector.size());
+  }
+
+
+void OpenCdm::Initialize(bool allow_distinctive_identifier, bool allow_persistent_state)
+{
+
+}
+
 void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
                                                cdm::SessionType session_type,
-                                               const char* init_data_type,
-                                               uint32 init_data_type_size,
+                                               cdm::InitDataType init_data_type,
                                                const uint8* init_data,
                                                uint32 init_data_size) {
   CDM_DLOG() << " OpenCdm::CreateSession promise_id: " << promise_id
@@ -248,11 +391,45 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
                      promise_id)));
 
   CDM_DLOG() << "OpenCdmDecryptor::CreateSession";
+
   uint32_t renderer_session_id = next_web_session_id_++;
+  std::vector<std::vector<uint8>> keys;
   std::string web_session_id = base::UintToString(renderer_session_id);
 
+  if (init_data && init_data_size) {
+    switch (init_data_type) {
+      case cdm::kWebM:
+        keys.push_back(
+            std::vector<uint8>(init_data, init_data + init_data_size));
+
+        break;
+      case cdm::kCenc:
+        if (!GetKeyIdsForCommonSystemId(init_data, init_data_size, &keys)) {
+          promise->reject(MediaKeys::NOT_SUPPORTED_ERROR, 0,
+                          "No supported PSSH box found.");
+          return;
+        }
+        break;
+      case cdm::kKeyIds: {
+        std::string init_data_string(init_data, init_data + init_data_size);
+        std::string error_message;
+        if (!ExtractKeyIdsFromKeyIdsInitData(init_data_string, &keys,
+                                             &error_message)) {
+          promise->reject(MediaKeys::NOT_SUPPORTED_ERROR, 0, error_message);
+          return;
+        }
+        break;
+      }
+      default:
+        NOTREACHED();
+        promise->reject(MediaKeys::NOT_SUPPORTED_ERROR, 0,
+                        "init_data_type not supported.");
+        return;
+    }
+  }
   MediaKeysCreateSessionResponse response = platform_->MediaKeysCreateSession(
-      init_data_type, init_data, init_data_size);
+      ConvertInitDataType(init_data_type), init_data, init_data_size);
+
   if (response.platform_response == PLATFORM_CALL_SUCCESS) {
     this->session_id_map[web_session_id] = response.session_id;
     std::string debug_web_session_id = GetChromeSessionId(response.session_id);
@@ -272,7 +449,8 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
  const GURL& legacy_destination_url = GURL::EmptyGURL();
 
  if (init_data && init_data_size)
-      CreateLicenseRequest(init_data, init_data_size, ConvertSessionType(session_type), &message);
+      CreateLicenseRequest(keys, ConvertSessionType(session_type), &message);
+
  host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
                         cdm::kLicenseRequest,
                         reinterpret_cast<const char*>(message.data()),
@@ -302,29 +480,37 @@ void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
   CDM_DLOG() << "UpdateSession: response_length: " << response_size;
   CDM_DLOG() << "UpdateSession: web_session_id: " << web_session_id;
 
-  std::string key_string(reinterpret_cast<const char*>(response),
-                         response_size);
-
   if (session_id_map.find(web_session_id) != session_id_map.end()) {
-    promise->resolve();
     platform_->MediaKeySessionUpdate(
         response, response_size, session_id_map[web_session_id].session_id,
         session_id_map[web_session_id].session_id_len);
+    promise->resolve();
   } else {
     promise->reject(media::MediaKeys::INVALID_ACCESS_ERROR, 0,
                     "Session does not exist.");
     return;
   }
+/*
+ *FIXME: disabled for now. Causes issues with the CDMI service.
+  if (!renewal_timer_set_) {
+    ScheduleNextRenewal();
+    renewal_timer_set_ = true;
+  }
+*/
+}
 
-//  {
-//    base::AutoLock auto_lock(new_key_cb_lock_);
-//
-//    if (!new_audio_key_cb_.is_null())
-//      new_audio_key_cb_.Run();
-//
-//    if (!new_video_key_cb_.is_null())
-//      new_video_key_cb_.Run();
-//  }
+void OpenCdm::ScheduleNextRenewal() {
+  std::ostringstream msg_stream;
+  msg_stream << kRenewalHeader << " from OpenCDM set at time "
+             << host_->GetCurrentWallTime() << ".";
+  next_renewal_message_ = msg_stream.str();
+
+  host_->SetTimer(timer_delay_ms_, &next_renewal_message_[0]);
+
+  // Use a smaller timer delay at start-up to facilitate testing. Increase the
+  // timer delay up to a limit to avoid message spam.
+  if (timer_delay_ms_ < kMaxTimerDelayMs)
+    timer_delay_ms_ = std::min(2 * timer_delay_ms_, kMaxTimerDelayMs);
 }
 
 void OpenCdm::CloseSession(uint32 promise_id,
@@ -361,8 +547,25 @@ void OpenCdm::SetServerCertificate(uint32 promise_id,
 }
 
 void OpenCdm::TimerExpired(void* context) {
-  CDM_DLOG() << " OpenCdm::SetServerCertificate ";
-  NOTIMPLEMENTED();
+
+  DCHECK(renewal_timer_set_);
+  std::string renewal_message;
+  if (!next_renewal_message_.empty() &&
+      context == &next_renewal_message_[0]) {
+    renewal_message = next_renewal_message_;
+  } else {
+    renewal_message = "ERROR: Invalid timer context found!";
+  }
+
+  // This URL is only used for testing the code path for defaultURL.
+  // There is no service at this URL, so applications should ignore it.
+  const char url[] = "http://test.externalclearkey.chromium.org";
+
+  host_->OnSessionMessage(last_session_id_.data(), last_session_id_.length(),
+                          cdm::kLicenseRenewal, renewal_message.data(),
+                          renewal_message.length(), url, arraysize(url) - 1);
+
+  //ScheduleNextRenewal();
 }
 
 enum ClearBytesBufferSel {
@@ -415,23 +618,27 @@ void OpenCdm::OnPromiseResolved(uint32 promise_id) {
 cdm::Status OpenCdm::InitializeAudioDecoder(
     const cdm::AudioDecoderConfig& audio_decoder_config) {
   CDM_DLOG() << "OpenCdm::InitializeAudioDecoder()";
-  last_stream_type_ = cdm::kStreamTypeAudio;
+
+  if (key_system_ == media::kExternalOpenCdmKeySystem)
+    return cdm::kSessionError;
 
 #if defined(OCDM_USE_FFMPEG_DECODER)
   if (!audio_decoder_)
-  audio_decoder_.reset(new media::FFmpegCdmAudioDecoder(host_));
-  // TODO(ska): consider using factory method to instantiate
-  // AudioDecoder (see VideoDecoder)
+    audio_decoder_.reset(new media::FFmpegCdmAudioDecoder(host_));
 
   if (!audio_decoder_->Initialize(audio_decoder_config))
-  return cdm::kSessionError;
-  CDM_DLOG() << "AudioDecoder initialized";
+    return cdm::kSessionError;
 
-  return audio_decoder_state_;
+  return cdm::kSuccess;
+#elif defined(OPEN_CDM_USE_FAKE_AUDIO_DECODER)
+  channel_count_ = audio_decoder_config.channel_count;
+  bits_per_channel_ = audio_decoder_config.bits_per_channel;
+  samples_per_second_ = audio_decoder_config.samples_per_second;
+  return cdm::kSuccess;
 #else
   NOTIMPLEMENTED();
   return cdm::kSessionError;
-#endif  // OCDM_USE_FFMPEG_DECODER
+#endif
 }
 
 cdm::Status OpenCdm::InitializeVideoDecoder(
@@ -586,7 +793,7 @@ std::string OpenCdm::GetChromeSessionId(
       }
     }
   }
-
+  CDM_DLOG() << "OpenCdm:: web_session_id " << web_session_id;
   return web_session_id;
 }
 

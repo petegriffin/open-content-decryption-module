@@ -33,7 +33,7 @@ namespace media {
  */
 class RpcCdmMediaengineHandler : public OpenCdmMediaengineCom {
  public:
-  RpcCdmMediaengineHandler(uint16_t *session_id_val, uint32_t session_id_len,
+  RpcCdmMediaengineHandler(char *session_id_val, uint32_t session_id_len,
                            uint8_t *auth_data_val, uint32_t auth_data_len);
   DecryptResponse Decrypt(const uint8_t *pbIv, uint32_t cbIv,
                                   const uint8_t *pbData, uint32_t cbData,

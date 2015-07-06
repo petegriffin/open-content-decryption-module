@@ -42,16 +42,16 @@ class RpcCdmPlatformHandler : public OpenCdmPlatformCom {
 
   // EME equivalent: media_keys_.loadSession()
   MediaKeysLoadSessionResponse MediaKeysLoadSession(
-      uint16_t *session_id_val, uint32_t session_id_len) override;
+      char *session_id_val, uint32_t session_id_len) override;
 
   // EME equivalent: media_key_session_.update()
   MediaKeySessionUpdateResponse MediaKeySessionUpdate(
-      const uint8 *pbKey, uint32 cbKey, uint16_t *session_id_val,
+      const uint8 *pbKey, uint32 cbKey, char *session_id_val,
       uint32_t session_id_len) override;
 
   // EME equivalent: media_key_session_.release()
   MediaKeySessionReleaseResponse MediaKeySessionRelease(
-      uint16_t *session_id_val, uint32_t session_id_len) override;
+      char *session_id_val, uint32_t session_id_len) override;
 
   ~RpcCdmPlatformHandler() override {
   }
@@ -67,7 +67,10 @@ class RpcCdmPlatformHandler : public OpenCdmPlatformCom {
                                   struct svc_req *rqstp, RpcCdmPlatformHandler *p_instance);
   static void OnError1SvcDelegate(rpc_cb_error *err_param, 
                                   struct svc_req *rqstp, RpcCdmPlatformHandler *p_instance);
-
+  static void OnKeyStatusUpdate1SvcDelegate(
+      rpc_cb_key_status_update *kmm, struct svc_req *rqstp,
+      RpcCdmPlatformHandler *p_instance);
+ 
  private:
   OpenCdmPlatformComCallbackReceiver *callback_receiver_;
   // TODO(ska): remove, when this gets available in callbacks

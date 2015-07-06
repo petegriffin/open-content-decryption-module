@@ -57,12 +57,14 @@ class OpenCdm : public OpenCdmInterface,
   ~OpenCdm() override;
 
   // OpenDecryptor MediaKeys implementation
+  void Initialize(bool allow_distinctive_identifier,
+                  bool allow_persistent_state) override;
   void CreateSessionAndGenerateRequest(uint32 promise_id,
                                                cdm::SessionType session_type,
-                                               const char* init_data_type,
-                                               uint32 init_data_type_size,
+                                               cdm::InitDataType init_data_type,
                                                const uint8* init_data,
                                                uint32 init_data_size) override;
+
   void LoadSession(uint32 promise_id,
                            cdm::SessionType session_type,
                            const char* web_session_id,
@@ -126,12 +128,17 @@ class OpenCdm : public OpenCdmInterface,
   void MessageCallback(OpenCdmPlatformSessionId platform_session_id,
                                std::string message,
                                std::string destination_url) override;
+
+  void OnKeyStatuseUpdateCallback(OpenCdmPlatformSessionId platform_session_id,
+                               std::string message) override;
+
   // ContentDecryptionModule callbacks.
   void OnSessionMessage(const std::string& web_session_id,
                         MediaKeys::MessageType message_type,
                         const std::vector<uint8>& message,
                         const GURL& legacy_destination_url);
-  void OnSessionKeysChange(const std::string& web_session_id,
+
+  void OnSessionKeysUpdate(const std::string& web_session_id,
                            bool has_additional_usable_key,
                            CdmKeysInfo keys_info);
   void OnSessionClosed(const std::string& web_session_id);
@@ -143,6 +150,10 @@ class OpenCdm : public OpenCdmInterface,
   void OnPromiseResolved(uint32 promise_id);
   void OnPromiseFailed(uint32 promise_id, MediaKeys::Exception exception_code,
                        uint32 system_code, const std::string& error_message);
+
+  // Prepares next renewal message and sets a timer for it.
+  void ScheduleNextRenewal();
+
 
  // Prepares next heartbeat message and sets a timer for it.
   void ScheduleNextHeartBeat();
@@ -170,6 +181,14 @@ class OpenCdm : public OpenCdmInterface,
   virtual std::string GetChromeSessionId(
       OpenCdmPlatformSessionId platform_session_id);
 
+  // Timer delay in milliseconds for the next host_->SetTimer() call.
+  int64 timer_delay_ms_;
+
+  // Indicates whether a renewal timer has been set to prevent multiple timers
+  // from running.
+  bool renewal_timer_set_;
+
+  std::string next_renewal_message_;
 #if defined(OCDM_USE_FFMPEG_DECODER)
   scoped_ptr<FFmpegCdmAudioDecoder> audio_decoder_;
   scoped_ptr<CdmVideoDecoder> video_decoder_;

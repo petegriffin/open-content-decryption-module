@@ -24,13 +24,13 @@ namespace media {
 std::string rpcServer = "localhost";
 // TODO(ska): outsource to config
 
-RpcCdmMediaengineHandler::RpcCdmMediaengineHandler(uint16_t *session_id_val,
+RpcCdmMediaengineHandler::RpcCdmMediaengineHandler(char *session_id_val,
                                                    uint32_t session_id_len,
                                                    uint8_t *auth_data_val,
                                                    uint32_t auth_data_len) {
   CDM_DLOG() << "RpcCdmMediaengineHandler::RpcCdmMediaengineHandler";
 
-  sessionId.id = new uint16_t[session_id_len];
+  sessionId.id = new char[session_id_len];
   memcpy(sessionId.id, session_id_val, session_id_len);
   // TODO(ska): do we need this memcpy?
   sessionId.id = session_id_val;

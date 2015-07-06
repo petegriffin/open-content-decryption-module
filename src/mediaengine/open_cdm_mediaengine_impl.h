@@ -33,8 +33,8 @@ namespace media {
  */
 class OpenCdmMediaengineImpl : public OpenCdmMediaengine {
  public:
-  OpenCdmMediaengineImpl(uint16_t *session_id_val, uint32_t session_id_len);
-  OpenCdmMediaengineImpl(uint16_t *session_id_val, uint32_t session_id_len,
+  OpenCdmMediaengineImpl(char *session_id_val, uint32_t session_id_len);
+  OpenCdmMediaengineImpl(char *session_id_val, uint32_t session_id_len,
                          uint8_t *auth_data_val, uint32_t auth_data_len);
 
   // synchronous decryption
