@@ -64,6 +64,16 @@ static const int64 kSecondsPerMinute = 60;
 static const int64 kMsPerSecond = 1000;
 static const int64 kInitialTimerDelayMs = 200;
 static const int64 kMaxTimerDelayMs = 1 * kSecondsPerMinute * kMsPerSecond;
+
+/* Currently we don't return the status from he CDMI if the keys are added.
+ * Whenever there are no keys added we need
+ * to make sure that the video decoder receives a kNoKey message instead
+ * of an error. If we return an error, the video decoder will choke on
+ * it and won' wait for the key to be added.
+ *
+ */
+static bool keysAddedToCdm = false;
+
 //const unsigned int kMaxOpenCDMSessionCount = 1;
 
 // TODO(tomfinegan): When COMPONENT_BUILD is not defined an AtExitManager must
@@ -451,6 +461,8 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
  if (init_data && init_data_size)
       CreateLicenseRequest(keys, ConvertSessionType(session_type), &message);
 
+ CDM_DLOG() << " Request LicenseRequest\n";
+
  host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
                         cdm::kLicenseRequest,
                         reinterpret_cast<const char*>(message.data()),
@@ -490,6 +502,7 @@ void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
                     "Session does not exist.");
     return;
   }
+  
 /*
  *FIXME: disabled for now. Causes issues with the CDMI service.
   if (!renewal_timer_set_) {
@@ -497,6 +510,7 @@ void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
     renewal_timer_set_ = true;
   }
 */
+  keysAddedToCdm = true;
 }
 
 void OpenCdm::ScheduleNextRenewal() {
@@ -801,11 +815,14 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
     const cdm::InputBuffer& encrypted_buffer,
     scoped_refptr<media::DecoderBuffer>* decrypted_buffer) {
   CDM_DLOG() << "OpenCdm::DecryptToMediaDecoderBuffer()";
-
   DCHECK(decrypted_buffer);
+
   //Fixme: We need to remove the memcopy
   uint8_t * out = new uint8_t[encrypted_buffer.data_size];
   uint32_t out_size = -1;
+
+  if(!keysAddedToCdm)
+    return cdm::kNoKey;
 
   scoped_refptr<media::DecoderBuffer> buffer = CopyDecoderBufferFrom(
       encrypted_buffer);
