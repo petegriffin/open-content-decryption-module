@@ -60,10 +60,10 @@ extern "C" {
 // FIXME(jrummell): Remove this once prefixed EME goes away.
 const char kRenewalHeader[] = "RENEWAL";
 
-const int64 kSecondsPerMinute = 60;
-const int64 kMsPerSecond = 1000;
-const int64 kInitialTimerDelayMs = 200;
-const int64 kMaxTimerDelayMs = 1 * kSecondsPerMinute * kMsPerSecond;
+static const int64 kSecondsPerMinute = 60;
+static const int64 kMsPerSecond = 1000;
+static const int64 kInitialTimerDelayMs = 200;
+static const int64 kMaxTimerDelayMs = 1 * kSecondsPerMinute * kMsPerSecond;
 //const unsigned int kMaxOpenCDMSessionCount = 1;
 
 // TODO(tomfinegan): When COMPONENT_BUILD is not defined an AtExitManager must
