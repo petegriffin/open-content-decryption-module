@@ -1,0 +1,116 @@
+diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
+index 63d4734..ffccf2c 100644
+--- a/chrome/renderer/media/chrome_key_systems.cc
++++ b/chrome/renderer/media/chrome_key_systems.cc
+@@ -48,6 +48,49 @@ static bool IsPepperCdmAvailable(
+   return is_available;
+ }
+ 
++// External Open CDM.
++static void AddExternalOpenCdm(
++    std::vector<KeySystemInfo>* concrete_key_systems) {
++  static const char kExternalOpenCdmKeySystem[] =
++      "com.microsoft.playready";
++  static const char kExternalOpenCdmPepperType[] =
++      "application/x-ppapi-open-cdm";
++
++  std::vector<base::string16> additional_param_names;
++  std::vector<base::string16> additional_param_values;
++  if (!IsPepperCdmAvailable(kExternalOpenCdmPepperType,
++                             &additional_param_names,
++                             &additional_param_values)) {
++    return;
++  }
++
++  KeySystemInfo info;
++  info.key_system = kExternalOpenCdmKeySystem;
++  info.supported_codecs |= media::EME_CODEC_WEBM_ALL;
++  info.supported_init_data_types |= media::kInitDataTypeMaskWebM;
++  #if defined (USE_PROPRIETARY_CODECS)
++  info.supported_codecs |= media::EME_CODEC_MP4_ALL;
++  info.supported_init_data_types |= media::kInitDataTypeMaskCenc;
++  #endif
++
++  info.max_audio_robustness = media::EmeRobustness::EMPTY;
++  info.max_video_robustness = media::EmeRobustness::EMPTY;
++
++  // Persistent sessions are faked.
++  info.persistent_license_support = media::EME_SESSION_TYPE_SUPPORTED;
++  info.persistent_release_message_support =
++      media::EME_SESSION_TYPE_NOT_SUPPORTED;
++  info.persistent_state_support = media::EME_FEATURE_REQUESTABLE;
++  info.distinctive_identifier_support = media::EME_FEATURE_NOT_SUPPORTED;
++
++
++  info.pepper_type = kExternalOpenCdmPepperType;
++
++  concrete_key_systems->push_back(info);
++
++}
++
++
+ // External Clear Key (used for testing).
+ static void AddExternalClearKey(
+     std::vector<KeySystemInfo>* concrete_key_systems) {
+@@ -216,7 +259,7 @@ static void AddPepperBasedWidevine(
+ void AddChromeKeySystems(std::vector<KeySystemInfo>* key_systems_info) {
+ #if defined(ENABLE_PEPPER_CDMS)
+   AddExternalClearKey(key_systems_info);
+-
++  AddExternalOpenCdm(key_systems_info);
+ #if defined(WIDEVINE_CDM_AVAILABLE)
+   AddPepperBasedWidevine(key_systems_info);
+ #endif  // defined(WIDEVINE_CDM_AVAILABLE)
+diff --git a/media/base/key_systems.cc b/media/base/key_systems.cc
+index 511a6ef..cd3164c 100644
+--- a/media/base/key_systems.cc
++++ b/media/base/key_systems.cc
+@@ -170,6 +170,10 @@ static bool IsPotentiallySupportedKeySystem(const std::string& key_system) {
+   if (IsExternalClearKey(key_system))
+     return true;
+ 
++  // Linaro: External playready
++  if (key_system == kPlayreadyKey)
++    return true;
++
+   // Chromecast defines behaviors for Cast clients within its reverse domain.
+   const char kChromecastRoot[] = "com.chromecast";
+   if (IsParentKeySystemOf(kChromecastRoot, key_system))
+diff --git a/media/cdm/key_system_names.cc b/media/cdm/key_system_names.cc
+index f0abaf0..d0fb82f 100644
+--- a/media/cdm/key_system_names.cc
++++ b/media/cdm/key_system_names.cc
+@@ -9,6 +9,7 @@
+ namespace media {
+ 
+ const char kClearKey[] = "org.w3.clearkey";
++const char kPlayreadyKey[] = "com.microsoft.playready";
+ const char kExternalClearKey[] = "org.chromium.externalclearkey";
+ 
+ bool IsParentKeySystemOf(const std::string& parent_key_system,
+diff --git a/media/cdm/key_system_names.h b/media/cdm/key_system_names.h
+index 94c84da..193684d 100644
+--- a/media/cdm/key_system_names.h
++++ b/media/cdm/key_system_names.h
+@@ -16,6 +16,9 @@ namespace media {
+ // The key system name for Clear Key.
+ MEDIA_EXPORT extern const char kClearKey[];
+ 
++// The key system name for Playready
++MEDIA_EXPORT extern const char kPlayreadyKey[];
++
+ // The key system name for External Clear Key.
+ MEDIA_EXPORT extern const char kExternalClearKey[];
+ 
+diff --git a/media/media.gyp b/media/media.gyp
+index 8e44915..26cf544 100644
+--- a/media/media.gyp
++++ b/media/media.gyp
+@@ -50,6 +50,7 @@
+   },
+   'includes': [
+     'media_cdm.gypi',
++    './cdm/ppapi/external_open_cdm/browser/media_open_cdm.gypi',
+   ],
+   'targets': [
+     {
