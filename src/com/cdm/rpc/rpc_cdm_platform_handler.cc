@@ -412,6 +412,8 @@ MediaKeysCreateSessionResponse RpcCdmPlatformHandler::MediaKeysCreateSession(
     session_id.session_id = rpc_response->session_id.session_id_val;
     session_id.session_id_len = rpc_response->session_id.session_id_len;
     response.session_id = session_id;
+    response.licence_req  = std::string(rpc_response->licence_req.licence_req_val,
+        rpc_response->licence_req.licence_req_len);
   } else {
     response.platform_response = PLATFORM_CALL_FAIL;
     CDM_DLOG() << "MediaKeys_CreateSession failed\n ";

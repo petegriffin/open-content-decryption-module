@@ -44,6 +44,7 @@ struct MediaKeysResponse : public PlatformResponse {
 };
 struct MediaKeysCreateSessionResponse : public PlatformResponse {
   OpenCdmPlatformSessionId session_id;
+  std::string licence_req;
 };
 struct MediaKeysLoadSessionResponse : public PlatformResponse {
 };

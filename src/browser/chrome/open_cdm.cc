@@ -98,21 +98,6 @@ static const int64 kMaxTimerDelayMs = 1 * kSecondsPerMinute * kMsPerSecond;
  */
 static bool keysAddedToCdm = false;
 
-//const unsigned int kMaxOpenCDMSessionCount = 1;
-
-static media::MediaKeys::SessionType ConvertSessionType(
-    cdm::SessionType session_type) {
-  switch (session_type) {
-    case cdm::kTemporary:
-      return media::MediaKeys::TEMPORARY_SESSION;
-    case cdm::kPersistentLicense:
-      return media::MediaKeys::PERSISTENT_LICENSE_SESSION;
-    case cdm::kPersistentKeyRelease:
-      return media::MediaKeys::PERSISTENT_RELEASE_MESSAGE_SESSION;
-  }
-  NOTIMPLEMENTED();
-  return media::MediaKeys::TEMPORARY_SESSION;
-}
 // Copies |input_buffer| into a media::DecoderBuffer. If the |input_buffer| is
 // empty, an empty (end-of-stream) media::DecoderBuffer is returned.
 static scoped_refptr<media::DecoderBuffer> CopyDecoderBufferFrom(
@@ -280,10 +265,12 @@ OpenCdm::~OpenCdm() {
 
 void OpenCdm::ReadyCallback(OpenCdmPlatformSessionId platform_session_id) {
   CDM_DLOG() << "OpenCdm::ReadyCallback";
-  CdmKeysInfo keys_info; //We pass empty keys_info
-   std::vector<cdm::KeyInformation> keys_vector;
    keysAddedToCdm = true;
-   OnSessionKeysUpdate(GetChromeSessionId(platform_session_id), true, keys_info.Pass());
+
+  std::string web_session_id = GetChromeSessionId(platform_session_id);
+  std::vector<cdm::KeyInformation> keys_vector;
+  host_->OnSessionKeysChange(web_session_id.data(), web_session_id.length(),
+      true, vector_as_array(&keys_vector), keys_vector.size());
 }
 
 void OpenCdm::LoadSession(uint32 promise_id,
@@ -309,7 +296,22 @@ void OpenCdm::ErrorCallback(OpenCdmPlatformSessionId platform_session_id,
 void OpenCdm::MessageCallback(OpenCdmPlatformSessionId platform_session_id,
                                std::string message,
                                std::string destination_url) {
-  CDM_DLOG() << "OpenCdm::MessageCallback";
+
+   CDM_DLOG() << "OpenCdm::MessageCallback";
+#if 0
+   std::string web_session_id = GetChromeSessionId(platform_session_id);
+
+   const GURL& legacy_destination_url = GURL::EmptyGURL();
+
+   CDM_DLOG() << ".. Request LicenseRequest\n";
+   //FIXME: the actual message is stored in the destination_rul
+
+   host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
+                          cdm::kLicenseRequest,
+                          reinterpret_cast<const char*>(destination_url.data()),
+                          destination_url.size(), legacy_destination_url.spec().data(),
+                          legacy_destination_url.spec().size());
+#endif
 }
 
 void OpenCdm::OnKeyStatusUpdateCallback(OpenCdmPlatformSessionId platform_session_id,
@@ -354,6 +356,7 @@ void OpenCdm::OnSessionKeysUpdate(const std::string& session_id,
     host_->OnSessionKeysChange(new_session_id.data(), new_session_id.length(),
                                has_additional_usable_key,
                                vector_as_array(&keys_vector), keys_vector.size());
+    CDM_DLOG() << "Session keys updated" ;
   }
 
 
@@ -431,20 +434,17 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
     return;
    }
     /* Key request */
+   const GURL& legacy_destination_url = GURL::EmptyGURL();
 
- std::vector<uint8> message;
- const GURL& legacy_destination_url = GURL::EmptyGURL();
+   CDM_DLOG() << ".. Request LicenseRequest\n";
+   //FIXME: the actual message is stored in the destination_rul
 
- if (init_data && init_data_size)
-      CreateLicenseRequest(keys, ConvertSessionType(session_type), &message);
+   host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
+                          cdm::kLicenseRequest,
+                          reinterpret_cast<const char*>(response.licence_req.data()),
+                          response.licence_req.size(), legacy_destination_url.spec().data(),
+                          legacy_destination_url.spec().size());
 
- CDM_DLOG() << " Request LicenseRequest\n";
-
- host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
-                        cdm::kLicenseRequest,
-                        reinterpret_cast<const char*>(message.data()),
-                        message.size(), legacy_destination_url.spec().data(),
-                        legacy_destination_url.spec().size());
  return;
 
 }
@@ -466,7 +466,7 @@ void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
 
   CHECK(response);
 
-  CDM_DLOG() << "UpdateSession: response_length: " << response_size;
+  CDM_DLOG() << "UpdateSession: response:" << std::string( (char*) response, response_size);
   CDM_DLOG() << "UpdateSession: web_session_id: " << web_session_id;
 
   if (session_id_map.find(web_session_id) != session_id_map.end()) {
@@ -791,7 +791,6 @@ std::string OpenCdm::GetChromeSessionId(
 cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
     const cdm::InputBuffer& encrypted_buffer,
     scoped_refptr<media::DecoderBuffer>* decrypted_buffer) {
-  CDM_DLOG() << "OpenCdm::DecryptToMediaDecoderBuffer()";
   DCHECK(decrypted_buffer);
 
   //Fixme: We need to remove the memcopy
@@ -805,7 +804,6 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
       encrypted_buffer);
 
   if (buffer->end_of_stream()) {
-    CDM_DLOG() << "#buffer->end_of_stream()";
     *decrypted_buffer = buffer;
     return cdm::kSuccess;
   }
@@ -813,7 +811,6 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   // from AESDecryptor.decrypt
   // An empty iv string signals that the frame is unencrypted.
   if (buffer->decrypt_config()->iv().empty()) {
-    CDM_DLOG() << "#buffer->decrypt_config()->iv().empty()";
     *decrypted_buffer = buffer;
     return cdm::kSuccess;
   }
@@ -859,7 +856,6 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
 
   size_t total_clear_size = 0;
   size_t total_encrypted_size = 0;
-  CDM_DLOG() << " Subsamples size: " << subsamples.size();
 
   for (size_t i = 0; i < subsamples.size(); i++) {
     total_clear_size += subsamples[i].clear_bytes;
@@ -901,7 +897,6 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
                                               encrypted_bytes.get(),
                                               total_encrypted_size, out.get(),
                                               out_size);
-  CDM_DLOG() << "media_engine_->Decrypt done";
 
   DCHECK_EQ(out_size, total_encrypted_size);
 

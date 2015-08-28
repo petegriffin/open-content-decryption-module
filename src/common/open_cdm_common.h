@@ -20,7 +20,7 @@
 namespace media {
 
 //const char kExternalOpenCdmKeySystem[] = "com.opencdm.mockdrm";
-const char kExternalOpenCdmKeySystem[] = "org.chromium.externalclearkey";
+const char kExternalOpenCdmKeySystem[] = "com.microsoft.playready";
 const char kOpenCdmVersion[] = "1.0.0.0";
 
 }  // namespace media
