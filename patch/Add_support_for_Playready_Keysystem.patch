@@ -1,8 +1,8 @@
 diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index 63d4734..ffccf2c 100644
+index c1db59a..950ec59 100644
 --- a/chrome/renderer/media/chrome_key_systems.cc
 +++ b/chrome/renderer/media/chrome_key_systems.cc
-@@ -48,6 +48,49 @@ static bool IsPepperCdmAvailable(
+@@ -48,6 +48,50 @@ static bool IsPepperCdmAvailable(
    return is_available;
  }
  
@@ -35,11 +35,12 @@ index 63d4734..ffccf2c 100644
 +  info.max_video_robustness = media::EmeRobustness::EMPTY;
 +
 +  // Persistent sessions are faked.
-+  info.persistent_license_support = media::EME_SESSION_TYPE_SUPPORTED;
++   info.persistent_license_support = media::EmeSessionTypeSupport::SUPPORTED;
 +  info.persistent_release_message_support =
-+      media::EME_SESSION_TYPE_NOT_SUPPORTED;
-+  info.persistent_state_support = media::EME_FEATURE_REQUESTABLE;
-+  info.distinctive_identifier_support = media::EME_FEATURE_NOT_SUPPORTED;
++      media::EmeSessionTypeSupport::NOT_SUPPORTED;
++  info.persistent_state_support = media::EmeFeatureSupport::REQUESTABLE;
++  info.distinctive_identifier_support = media::EmeFeatureSupport::NOT_SUPPORTED;
++
 +
 +
 +  info.pepper_type = kExternalOpenCdmPepperType;
@@ -52,7 +53,7 @@ index 63d4734..ffccf2c 100644
  // External Clear Key (used for testing).
  static void AddExternalClearKey(
      std::vector<KeySystemInfo>* concrete_key_systems) {
-@@ -216,7 +259,7 @@ static void AddPepperBasedWidevine(
+@@ -218,7 +262,7 @@ static void AddPepperBasedWidevine(
  void AddChromeKeySystems(std::vector<KeySystemInfo>* key_systems_info) {
  #if defined(ENABLE_PEPPER_CDMS)
    AddExternalClearKey(key_systems_info);
@@ -62,10 +63,10 @@ index 63d4734..ffccf2c 100644
    AddPepperBasedWidevine(key_systems_info);
  #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 diff --git a/media/base/key_systems.cc b/media/base/key_systems.cc
-index 511a6ef..cd3164c 100644
+index 32fa1c7..55002bd 100644
 --- a/media/base/key_systems.cc
 +++ b/media/base/key_systems.cc
-@@ -170,6 +170,10 @@ static bool IsPotentiallySupportedKeySystem(const std::string& key_system) {
+@@ -152,6 +152,10 @@ static bool IsPotentiallySupportedKeySystem(const std::string& key_system) {
    if (IsExternalClearKey(key_system))
      return true;
  
@@ -77,19 +78,19 @@ index 511a6ef..cd3164c 100644
    const char kChromecastRoot[] = "com.chromecast";
    if (IsParentKeySystemOf(kChromecastRoot, key_system))
 diff --git a/media/cdm/key_system_names.cc b/media/cdm/key_system_names.cc
-index f0abaf0..d0fb82f 100644
+index 1782203..3ffe7e6 100644
 --- a/media/cdm/key_system_names.cc
 +++ b/media/cdm/key_system_names.cc
-@@ -9,6 +9,7 @@
+@@ -8,6 +8,7 @@
  namespace media {
  
  const char kClearKey[] = "org.w3.clearkey";
 +const char kPlayreadyKey[] = "com.microsoft.playready";
  const char kExternalClearKey[] = "org.chromium.externalclearkey";
  
- bool IsParentKeySystemOf(const std::string& parent_key_system,
+ bool IsClearKey(const std::string& key_system) {
 diff --git a/media/cdm/key_system_names.h b/media/cdm/key_system_names.h
-index 94c84da..193684d 100644
+index 6c388b98..186c85f 100644
 --- a/media/cdm/key_system_names.h
 +++ b/media/cdm/key_system_names.h
 @@ -16,6 +16,9 @@ namespace media {
@@ -103,10 +104,10 @@ index 94c84da..193684d 100644
  MEDIA_EXPORT extern const char kExternalClearKey[];
  
 diff --git a/media/media.gyp b/media/media.gyp
-index 8e44915..26cf544 100644
+index f041c15..780bb54 100644
 --- a/media/media.gyp
 +++ b/media/media.gyp
-@@ -50,6 +50,7 @@
+@@ -45,6 +45,7 @@
    },
    'includes': [
      'media_cdm.gypi',
