@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Fraunhofer FOKUS
+ * Copyright 2015 Linaro LtD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_COMMON_OPEN_CDM_COMMON_H_
-#define MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_COMMON_OPEN_CDM_COMMON_H_
-
-#ifdef OCDM_USE_PLAYREADY
-#include "media/cdm/ppapi/external_open_cdm/include/playready/constants.h"
-#else
-#error("Key system not supported")
-#endif
-
+#ifndef MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_PLAYREADY_CONSTANTS_H_
+#define MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_PLAYREADY_CONSTANTS_H_
 
 namespace media {
-const char kOpenCdmVersion[] = "1.0.0.0";
-}  // namespace media
+  /*
+  * Playready key system ID. Source: http://bit.ly/1LLitef
+  */
+  const uint8_t  kOcdmKeySystemId[] =
+      {0x9A, 0x04, 0xF0, 0x79, 0x98,
+       0x40, 0x42, 0x86, 0xAB, 0x92,
+       0xE6, 0x5B, 0xE0, 0x88, 0x5F, 0x95};
 
-#endif  // MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_COMMON_OPEN_CDM_COMMON_H_
+  const char kExternalOpenCdmKeySystem[] = "com.microsoft.playready";
+}
+#endif

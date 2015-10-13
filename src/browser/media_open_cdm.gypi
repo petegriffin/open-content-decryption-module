@@ -24,6 +24,8 @@
 
 {
   'variables': {
+    'playready%' : 0,
+
     'conditions': [
       ['OS == "android"', {
         # Android doesn't use ffmpeg.
@@ -49,6 +51,9 @@
                 '<(DEPTH)/media/cdm/ppapi/external_clear_key/ffmpeg_cdm_audio_decoder.cc',
                 '<(DEPTH)/media/cdm/ppapi/external_clear_key/ffmpeg_cdm_audio_decoder.h',
               ],
+            }],
+            ['playready == 1', { 
+              'defines' : [ 'OCDM_USE_PLAYREADY' ],
             }],
             ['use_ffmpeg == 1'  , {
               'sources': [

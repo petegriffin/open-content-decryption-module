@@ -55,7 +55,7 @@ extern "C" {
 #include "base/path_service.h"
 #include "media/base/media.h"
 
-
+#include "media/cdm/cenc_utils.h"
 
 // TODO(tomfinegan): When COMPONENT_BUILD is not defined an AtExitManager must
 // exist before the call to InitializeFFmpegLibraries(). This should no longer
@@ -69,9 +69,7 @@ static base::AtExitManager g_at_exit_manager;
 // are required for running in the sandbox, and should no longer be required
 // after http://crbug.com/91970 is fixed.
 static bool InitializeFFmpegLibraries() {
-  base::FilePath file_path;
-  CHECK(PathService::Get(base::DIR_MODULE, &file_path));
-  CHECK(media::InitializeMediaLibrary(file_path));
+  media::InitializeMediaLibrary();
   return true;
 }
 
@@ -380,8 +378,6 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
           base::Bind(&OpenCdm::OnPromiseFailed, base::Unretained(this),
                      promise_id)));
 
-  CDM_DLOG() << "OpenCdmDecryptor::CreateSession";
-
   uint32_t renderer_session_id = next_web_session_id_++;
   std::vector<std::vector<uint8>> keys;
   std::string web_session_id = base::UintToString(renderer_session_id);
@@ -394,17 +390,19 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
 
         break;
       case cdm::kCenc:
-        if (!GetKeyIdsForCommonSystemId(init_data, init_data_size, &keys)) {
-          promise->reject(MediaKeys::NOT_SUPPORTED_ERROR, 0,
-                          "No supported PSSH box found.");
-          return;
-        }
+        if (!GetKeyIdsForCommonSystemId(
+              std::vector<uint8_t>(init_data, init_data + init_data_size),
+              &keys)) {
+          CDM_DLOG() << "Warning. Failed to extract common key from PSSH box. "
+              << "CDMI must handle the PSSH box.";
+         }
         break;
       case cdm::kKeyIds: {
         std::string init_data_string(init_data, init_data + init_data_size);
         std::string error_message;
         if (!ExtractKeyIdsFromKeyIdsInitData(init_data_string, &keys,
                                              &error_message)) {
+          CDM_DLOG() << "Failed to extract keys";
           promise->reject(MediaKeys::NOT_SUPPORTED_ERROR, 0, error_message);
           return;
         }
@@ -412,14 +410,16 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
       }
       default:
         NOTREACHED();
+        CDM_DLOG() << "init data type not supported";
         promise->reject(MediaKeys::NOT_SUPPORTED_ERROR, 0,
                         "init_data_type not supported.");
         return;
     }
   }
+  CDM_DLOG() << "Creating session" ;
   MediaKeysCreateSessionResponse response = platform_->MediaKeysCreateSession(
       ConvertInitDataType(init_data_type), init_data, init_data_size);
-
+  CDM_DLOG() << "Resolving promise" ;
   if (response.platform_response == PLATFORM_CALL_SUCCESS) {
     this->session_id_map[web_session_id] = response.session_id;
     std::string debug_web_session_id = GetChromeSessionId(response.session_id);
@@ -436,9 +436,6 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
     /* Key request */
    const GURL& legacy_destination_url = GURL::EmptyGURL();
 
-   CDM_DLOG() << ".. Request LicenseRequest\n";
-   //FIXME: the actual message is stored in the destination_rul
-
    host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
                           cdm::kLicenseRequest,
                           reinterpret_cast<const char*>(response.licence_req.data()),
@@ -446,7 +443,6 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
                           legacy_destination_url.spec().size());
 
  return;
-
 }
 
 void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
