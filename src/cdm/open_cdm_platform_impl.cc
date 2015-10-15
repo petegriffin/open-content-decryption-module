@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_impl.h"
-#include "media/cdm/ppapi/external_open_cdm/com/cdm/open_cdm_platform_com_handler_factory.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_impl.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/cdm/open_cdm_platform_com_handler_factory.h"
 #include "media/cdm/ppapi/cdm_logging.h"
 
 namespace media {

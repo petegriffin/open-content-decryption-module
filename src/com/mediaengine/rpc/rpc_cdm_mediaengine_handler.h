@@ -20,8 +20,8 @@
 #include <rpc/rpc.h>
 #include <string>
 
-#include "media/cdm/ppapi/external_open_cdm/com/common/shmemsem/shmemsem_helper.h"
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine_com.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/common/shmemsem/shmemsem_helper.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine_com.h"
 
 namespace media {
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine_impl.h"
-#include "media/cdm/ppapi/external_open_cdm/com/mediaengine/rpc/rpc_cdm_mediaengine_handler.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine_impl.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/mediaengine/rpc/rpc_cdm_mediaengine_handler.h"
 
 #include "media/cdm/ppapi/cdm_logging.h"
 

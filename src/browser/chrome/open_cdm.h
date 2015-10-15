@@ -37,10 +37,10 @@
 #include "media/base/media_keys.h"
 #include "media/base/decoder_buffer.h"
 
-#include "media/cdm/ppapi/external_open_cdm/browser/chrome/open_cdm_chrome_common.h"
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform.h"
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_com_callback_receiver.h"
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine.h"
+#include "media/cdm/ppapi/external_open_cdm/src/browser/chrome/open_cdm_chrome_common.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_com_callback_receiver.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine.h"
 
 #include "media/cdm/ppapi/external_clear_key/ffmpeg_cdm_audio_decoder.h"
 #include "media/cdm/ppapi/external_clear_key/ffmpeg_cdm_video_decoder.h"

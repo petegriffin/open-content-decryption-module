@@ -19,8 +19,8 @@
 
 #include <string>
 
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine.h"
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine_impl.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine_impl.h"
 
 #include "media/cdm/ppapi/cdm_logging.h"
 

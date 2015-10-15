@@ -20,10 +20,10 @@
 #include <rpc/rpc.h>
 #include <string>
 
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_common.h"
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_com.h"
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_com_callback_receiver.h"
-#include "media/cdm/ppapi/external_open_cdm/com/common/rpc/opencdm_callback.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_common.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_com.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_com_callback_receiver.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/common/rpc/opencdm_callback.h"
 
 namespace media {
 

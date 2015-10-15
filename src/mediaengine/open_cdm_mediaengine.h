@@ -17,7 +17,7 @@
 #ifndef MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_MEDIAENGINE_OPEN_CDM_MEDIAENGINE_H_
 #define MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_MEDIAENGINE_OPEN_CDM_MEDIAENGINE_H_
 
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_common.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_common.h"
 
 namespace media {
 

@@ -18,7 +18,7 @@
 #define MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_COMMON_OPEN_CDM_COMMON_H_
 
 #ifdef OCDM_USE_PLAYREADY
-#include "media/cdm/ppapi/external_open_cdm/include/playready/constants.h"
+#include "media/cdm/ppapi/external_open_cdm/src/include/playready/constants.h"
 #else
 #error("Key system not supported")
 #endif

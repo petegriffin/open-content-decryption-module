@@ -15,9 +15,9 @@
  */
 
 #include <fstream>
-#include "media/cdm/ppapi/external_open_cdm/com/mediaengine/rpc/rpc_cdm_mediaengine_handler.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/mediaengine/rpc/rpc_cdm_mediaengine_handler.h"
 #include "media/cdm/ppapi/cdm_logging.h"
-#include "media/cdm/ppapi/external_open_cdm/com/common/rpc/opencdm_xdr.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/common/rpc/opencdm_xdr.h"
 
 namespace media {
 

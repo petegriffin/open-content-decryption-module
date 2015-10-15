@@ -10,7 +10,7 @@
 ```
   'browser/media/encrypted_media_istypesupported_browsertest.cc',
   # OCDM tests
-  '<(DEPTH)/media/cdm/ppapi/external_open_cdm/browser/chrome/tests/ocdm_encrypted_media_istypesupported_browsertest.cc',
+  '<(DEPTH)/media/cdm/ppapi/external_open_cdm/src/browser/chrome/tests/ocdm_encrypted_media_istypesupported_browsertest.cc',
 ```
 
  * ```$ ./build/gyp_chromium```

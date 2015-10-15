@@ -17,11 +17,11 @@
 #include <pthread.h>
 #include <rpc/pmap_clnt.h>
 #include <map>
-#include "media/cdm/ppapi/external_open_cdm/com/cdm/rpc/rpc_cdm_platform_handler.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/cdm/rpc/rpc_cdm_platform_handler.h"
 #include "media/cdm/ppapi/cdm_logging.h"
 
 extern "C" {
-#include "media/cdm/ppapi/external_open_cdm/com/common/rpc/opencdm_xdr.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/common/rpc/opencdm_xdr.h"
 }
 
 typedef struct {

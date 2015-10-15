@@ -24,7 +24,7 @@
 
 #include "base/json/json_reader.h"
 #include "base/values.h"
-#include "media/cdm/ppapi/external_open_cdm/browser/chrome/open_cdm.h"
+#include "media/cdm/ppapi/external_open_cdm/src/browser/chrome/open_cdm.h"
 
 // Include FFmpeg avformat.h for av_register_all().
 extern "C" {
@@ -36,9 +36,9 @@ extern "C" {
 #include "media/base/cdm_callback_promise.h"
 #include "media/cdm/cenc_utils.h"
 #include "media/cdm/json_web_key.h"
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine_factory.h"
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_factory.h"
-#include "media/cdm/ppapi/external_open_cdm/common/open_cdm_common.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine_factory.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_factory.h"
+#include "media/cdm/ppapi/external_open_cdm/src/common/open_cdm_common.h"
 
 #include "media/cdm/ppapi/cdm_logging.h"
 #include "base/bind.h"

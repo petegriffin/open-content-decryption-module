@@ -18,8 +18,8 @@
 #define MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_CDM_OPEN_CDM_PLATFORM_H_
 
 #include <string>
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_common.h"
-#include "media/cdm/ppapi/external_open_cdm/cdm/open_cdm_platform_com_callback_receiver.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_common.h"
+#include "media/cdm/ppapi/external_open_cdm/src/cdm/open_cdm_platform_com_callback_receiver.h"
 
 namespace media {
 

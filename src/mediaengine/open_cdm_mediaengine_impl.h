@@ -17,11 +17,11 @@
 #ifndef MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_MEDIAENGINE_OPEN_CDM_MEDIAENGINE_IMPL_H_
 #define MEDIA_CDM_PPAPI_EXTERNAL_OPEN_CDM_MEDIAENGINE_OPEN_CDM_MEDIAENGINE_IMPL_H_
 
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine.h"
-#include "media/cdm/ppapi/external_open_cdm/mediaengine/open_cdm_mediaengine_com.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine.h"
+#include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine_com.h"
 #include <rpc/rpc.h>
 #include <string>
-#include "media/cdm/ppapi/external_open_cdm/com/common/shmemsem/shmemsem_helper.h"
+#include "media/cdm/ppapi/external_open_cdm/src/com/common/shmemsem/shmemsem_helper.h"
 
 namespace media {
 

@@ -51,12 +51,12 @@ For more details see the [milestones](https://github.com/fraunhoferfokus/open-co
 ### ...as Pepper Plugin for Chromium
 * clone this repository, e.g. into $HOME/opencdm
 * create the following symbolic link
- * ```$ ln -s $HOME/opencdm/src $CHROMIUM_ROOT/src/media/cdm/ppapi/external_open_cdm```
+ * ```$ cp -a $HOME/opencdm/ $CHROMIUM_ROOT/src/media/cdm/ppapi/external_open_cdm```
 * add include into the ```$CHROMIUM_ROOT/src/media/media.gyp``` file to contain this:
 ```
   'includes': [
     'media_cdm.gypi',
-    './cdm/ppapi/external_open_cdm/browser/media_open_cdm.gypi'
+    './cdm/ppapi/external_open_cdm/src/browser/media_open_cdm.gypi'
     ]
 ```
 * apply changes by generating the project files
