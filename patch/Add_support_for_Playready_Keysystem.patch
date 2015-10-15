@@ -1,67 +1,36 @@
-diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index c1db59a..950ec59 100644
---- a/chrome/renderer/media/chrome_key_systems.cc
-+++ b/chrome/renderer/media/chrome_key_systems.cc
-@@ -48,6 +48,50 @@ static bool IsPepperCdmAvailable(
-   return is_available;
+diff --git a/chrome/chrome_renderer.gypi b/chrome/chrome_renderer.gypi
+index 9bcc3db..c3900b7 100644
+--- a/chrome/chrome_renderer.gypi
++++ b/chrome/chrome_renderer.gypi
+@@ -275,6 +275,7 @@
+         '../third_party/icu/icu.gyp:icui18n',
+         '../third_party/icu/icu.gyp:icuuc',
+         '../third_party/widevine/cdm/widevine_cdm.gyp:widevine_cdm_version_h',
++        '../media/media.gyp:opencdmkeysystems',
+       ],
+       'include_dirs': [
+         '..',
+diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
+index cc4ba2b..ca602f9 100644
+--- a/chrome/renderer/chrome_content_renderer_client.cc
++++ b/chrome/renderer/chrome_content_renderer_client.cc
+@@ -128,6 +128,8 @@
+ #include "extensions/renderer/script_context.h"
+ #endif
+ 
++#include "media/cdm/ppapi/external_open_cdm/src/browser/opencdm_key_systems.h"
++
+ #if defined(ENABLE_IPC_FUZZER)
+ #include "chrome/common/external_ipc_dumper.h"
+ #endif
+@@ -1495,6 +1497,7 @@ bool ChromeContentRendererClient::AllowPepperMediaStreamAPI(
+ void ChromeContentRendererClient::AddKeySystems(
+     std::vector<media::KeySystemInfo>* key_systems) {
+   AddChromeKeySystems(key_systems);
++  AddExternalOpenCdmKeySystems(key_systems);
  }
  
-+// External Open CDM.
-+static void AddExternalOpenCdm(
-+    std::vector<KeySystemInfo>* concrete_key_systems) {
-+  static const char kExternalOpenCdmKeySystem[] =
-+      "com.microsoft.playready";
-+  static const char kExternalOpenCdmPepperType[] =
-+      "application/x-ppapi-open-cdm";
-+
-+  std::vector<base::string16> additional_param_names;
-+  std::vector<base::string16> additional_param_values;
-+  if (!IsPepperCdmAvailable(kExternalOpenCdmPepperType,
-+                             &additional_param_names,
-+                             &additional_param_values)) {
-+    return;
-+  }
-+
-+  KeySystemInfo info;
-+  info.key_system = kExternalOpenCdmKeySystem;
-+  info.supported_codecs |= media::EME_CODEC_WEBM_ALL;
-+  info.supported_init_data_types |= media::kInitDataTypeMaskWebM;
-+  #if defined (USE_PROPRIETARY_CODECS)
-+  info.supported_codecs |= media::EME_CODEC_MP4_ALL;
-+  info.supported_init_data_types |= media::kInitDataTypeMaskCenc;
-+  #endif
-+
-+  info.max_audio_robustness = media::EmeRobustness::EMPTY;
-+  info.max_video_robustness = media::EmeRobustness::EMPTY;
-+
-+  // Persistent sessions are faked.
-+   info.persistent_license_support = media::EmeSessionTypeSupport::SUPPORTED;
-+  info.persistent_release_message_support =
-+      media::EmeSessionTypeSupport::NOT_SUPPORTED;
-+  info.persistent_state_support = media::EmeFeatureSupport::REQUESTABLE;
-+  info.distinctive_identifier_support = media::EmeFeatureSupport::NOT_SUPPORTED;
-+
-+
-+
-+  info.pepper_type = kExternalOpenCdmPepperType;
-+
-+  concrete_key_systems->push_back(info);
-+
-+}
-+
-+
- // External Clear Key (used for testing).
- static void AddExternalClearKey(
-     std::vector<KeySystemInfo>* concrete_key_systems) {
-@@ -218,7 +262,7 @@ static void AddPepperBasedWidevine(
- void AddChromeKeySystems(std::vector<KeySystemInfo>* key_systems_info) {
- #if defined(ENABLE_PEPPER_CDMS)
-   AddExternalClearKey(key_systems_info);
--
-+  AddExternalOpenCdm(key_systems_info);
- #if defined(WIDEVINE_CDM_AVAILABLE)
-   AddPepperBasedWidevine(key_systems_info);
- #endif  // defined(WIDEVINE_CDM_AVAILABLE)
+ bool ChromeContentRendererClient::ShouldReportDetailedMessageForSource(
 diff --git a/media/base/key_systems.cc b/media/base/key_systems.cc
 index 32fa1c7..55002bd 100644
 --- a/media/base/key_systems.cc
@@ -104,14 +73,14 @@ index 6c388b98..186c85f 100644
  MEDIA_EXPORT extern const char kExternalClearKey[];
  
 diff --git a/media/media.gyp b/media/media.gyp
-index f041c15..780bb54 100644
+index f041c15..b4ca153 100644
 --- a/media/media.gyp
 +++ b/media/media.gyp
 @@ -45,6 +45,7 @@
    },
    'includes': [
      'media_cdm.gypi',
-+    './cdm/ppapi/external_open_cdm/browser/media_open_cdm.gypi',
++    './cdm/ppapi/external_open_cdm/src/browser/media_open_cdm.gypi',
    ],
    'targets': [
      {

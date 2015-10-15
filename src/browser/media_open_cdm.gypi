@@ -139,6 +139,17 @@
             }],
           ],
         },
+        {
+        'target_name': 'opencdmkeysystems',
+        'type': 'static_library',
+        'sources': [
+          'opencdm_key_systems.cc'
+          ],
+        'include_dirs': [
+           '<(DEPTH)',
+          ],
+        }
+        # opencdm_key_systems 
       ],
     }],
   ],
