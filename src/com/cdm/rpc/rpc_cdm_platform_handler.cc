@@ -153,26 +153,13 @@ void RpcCdmPlatformHandler::OnKeyStatusUpdate1SvcDelegate(
 
 void RpcCdmPlatformHandler::OnMessage1Svc(rpc_cb_message *kmm, struct svc_req *)
 {
-  CDM_DLOG() << "on_key_message_1_svc";
-  CDM_DLOG() << "len: " << kmm->session_id.session_id_len;
-  CDM_DLOG() << "val lic. " << kmm->destination_url;
-
-  std::string s;
-  std::string delimiter = "#SPLIT#";
-  std::string laURL;
-  std::string message;
+  std::string laURL(kmm->destination_url);
+  std::string message(kmm->message);
   OpenCdmPlatformSessionId session_id;
 
   session_id.session_id_len = kmm->session_id.session_id_len;
   session_id.session_id = kmm->session_id.session_id_val;
 
-  s = kmm->destination_url;
-  laURL = s.substr(0, s.find(delimiter));
-  message = s.substr(s.find(delimiter) + delimiter.size(), s.size());
-  CDM_DLOG() << "LA_URL: " << laURL.c_str();
-  CDM_DLOG() << "KEY_MESSAGE received: " << message.c_str();
-
-  //get open_media_keys instance to execute callbacks
   this->callback_receiver_->MessageCallback(session_id, message, laURL);
 }
 

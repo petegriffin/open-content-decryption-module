@@ -26,8 +26,11 @@
 
 namespace media {
 
-//const std::string open_cdm_key_system = "com.opencdm.mockdrm";
+#ifdef OCDM_USE_PLAYREADY
 const std::string open_cdm_key_system = "com.microsoft.playready";
+#else
+const std::string open_cdm_key_system = "org.chromium.externalclearkey";
+#endif
 
 // TODO(ska): outsource the mapping of key system string
 // to mediaengine and platform implementations

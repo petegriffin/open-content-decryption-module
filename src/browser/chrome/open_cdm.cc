@@ -435,13 +435,13 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
    }
     /* Key request */
    const GURL& legacy_destination_url = GURL::EmptyGURL();
-
+   CDM_DLOG() << "Sending session message" << std::string((char*) response.licence_req.data(), response.licence_req.size());
    host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
                           cdm::kLicenseRequest,
                           reinterpret_cast<const char*>(response.licence_req.data()),
                           response.licence_req.size(), legacy_destination_url.spec().data(),
                           legacy_destination_url.spec().size());
-
+  CDM_DLOG() << "Sent session message";
  return;
 }
 

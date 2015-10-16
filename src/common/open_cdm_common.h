@@ -20,7 +20,7 @@
 #ifdef OCDM_USE_PLAYREADY
 #include "media/cdm/ppapi/external_open_cdm/src/include/playready/constants.h"
 #else
-#error("Key system not supported")
+#include "media/cdm/ppapi/external_open_cdm/src/include/clearkey/constants.h"
 #endif
 
 
