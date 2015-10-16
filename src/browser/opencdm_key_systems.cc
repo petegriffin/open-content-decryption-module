@@ -29,9 +29,6 @@ static void AddPlayreadyKeySystem(std::vector<KeySystemInfo>* key_systems_info) 
   static const char kExternalOpenCdmPepperType[] =
       "application/x-ppapi-open-cdm";
 
-  std::vector<base::string16> additional_param_names;
-  std::vector<base::string16> additional_param_values;
-
   KeySystemInfo info;
   //TODO: Add check if PPAPI CDM available
   info.key_system = kExternalOpenCdmKeySystem;
@@ -63,9 +60,6 @@ static void AddOcdmClearKeySystem(std::vector<KeySystemInfo>* key_systems_info) 
       "org.chromium.externalclearkey";
   static const char kExternalOpenCdmPepperType[] =
       "application/x-ppapi-open-cdm";
-
-  std::vector<base::string16> additional_param_names;
-  std::vector<base::string16> additional_param_values;
 
   KeySystemInfo info;
   //TODO: Add check if PPAPI CDM available

@@ -445,8 +445,6 @@ void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
                             uint32 response_size) {
   CDM_DLOG() << " OpenCdm::UpdateSession for " << web_session_id;
 
-  std::string web_session_str(web_session_id, web_session_id_size);
-
   scoped_ptr<media::SimpleCdmPromise> promise(new media::CdmCallbackPromise<>(
       base::Bind(&OpenCdm::OnPromiseResolved, base::Unretained(this),
                  promise_id),
