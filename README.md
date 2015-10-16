@@ -1,3 +1,10 @@
+# Linaro CDM
+
+Linaro CDM is a fork of the [Open Content Decryption Module (OCDM)](https://github.com/fraunhoferfokus/open-content-decryption-module). The reason
+for creating this fork is to taget the outstanding issues with Open CDM described here:
+
+https://groups.google.com/forum/#!topic/opencdm/ovamIrJn3z0
+
 # Open Content Decryption Module
 
 The Open Content Decryption Module (OCDM) is a Content Decryption Module (CDM) according to W3C EME [1] specification to be used with HTML5 based browser environments and ecosystems [5]. The implementation enables DRM interoperability.
