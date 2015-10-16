@@ -22,6 +22,29 @@ Fraunhofer FOKUS has developed the Open Content Decryption Module (OCDM) accordi
 * CDMi allows open source browsers to support DRM without licensing it
 * e2e tested with Microsoft PlayReady DRM system
 
+
+## How to build
+
+### ...as Pepper Plugin for Chromium
+* clone this repository, e.g. into $HOME/linaro-cdm and copy the project tp tje chromium dir  
+  ```# cp -a $HOME/linaro-cdm $CHROMIUM_ROOT/src/media/cdm/ppapi/external_open_cdm```
+* Patch Chromium with the new key system  
+  ``` # cd $CHROMIUM_ROOT/src```  
+  ```# patch -p1 < media/cdm/ppapi/external_open_cdm/patch/add_ocdm_keyssystems.patch```
+
+  reconfigure the chromium build   
+  ```# cd $CHROMIUM_ROOT/src```  
+  ```# GYP_DEFINES="ffmpeg_branding=Chrome proprietary_codecs=1 enable_pepper_cdms=1 component=shared_library"```  
+  ```# build/gyp_chromium```  
+* build the following target (check *[Build notes for Chromium](docs/build_notes_chromium.md)* section before building)  
+  ```# ninja -C out/Debug chrome opencdmadapter```
+
+## How to run
+
+ * Build and run the Linaro [CDMi](https://github.com/kuscsik/linaro-cdmi) project.
+ * Run Chromium with OCDM enabled:  
+   ```# out/Debug/chrome --no-sandbox--register-pepper-plugins="out/Debug/libopencdmadapter.so;application/x-ppapi-clearkey-cdm"```
+
 ## Scope
 
 OCDM is developed according to W3C EME. This leads to a architecture as shown in the figure below, which consists of a Web application, a browser and a DRM platform layer. The browser as mediator between Web application and DRM platform exposes the EME and contains a CDM. The Web application is connected to the browser via EME. EME is mapped by the browser to a CDM and the CDM communicates to the DRM platform.
@@ -51,46 +74,9 @@ Currently OCDM development is compatible with following Web browers:
 * Opera SDK
  * Linux
 
-For more details see the [milestones](https://github.com/fraunhoferfokus/open-content-decryption-module/milestones) page.
-
-## How to build
-
-### ...as Pepper Plugin for Chromium
-* clone this repository, e.g. into $HOME/opencdm
-* create the following symbolic link
- * ```$ cp -a $HOME/opencdm/ $CHROMIUM_ROOT/src/media/cdm/ppapi/external_open_cdm```
-* add include into the ```$CHROMIUM_ROOT/src/media/media.gyp``` file to contain this:
-```
-  'includes': [
-    'media_cdm.gypi',
-    './cdm/ppapi/external_open_cdm/src/browser/media_open_cdm.gypi'
-    ]
-```
-* apply changes by generating the project files
- * ```$ cd $CHROMIUM_ROOT/src```
- * ```$ build/gyp_chromium```
-* build the following target (please follow *[Build notes for Chromium](docs/build_notes_chromium.md)* section before building)
- * ```$ ninja -C out/Debug opencdmadapter```
-
-## How to run
-* integrate OCDM with your browser
- * example to be found in src/browser folder
-* setup communication to DRM system
- * sample code for this is provided in the separate [Open Content Decryption Module CDMi](https://github.com/fraunhoferfokus/open-content-decryption-module-cdmi) repository
-
-In practice the Pepper Plugin API based OCDM implementation can be launched as follows:
-
-```
-./out/Debug/chrome --register-pepper-plugins="out/Debug/libopencdmadapter.so;application/x-ppapi-open-cdm"
-```
-
 ## Folder Structure
 
 Navigate the folders and see the readme files for further information.
-
-## How to contribute
-
-See the [wiki](https://github.com/fraunhoferfokus/open-content-decryption-module/wiki) for information on how to contribute to this project.
 
 ## Known Issues / Comments
 
@@ -100,11 +86,10 @@ This is a preliminary version of OCDM. Please file any issues or comments.
 * Multiple session support is current work in progress.
 * Code needs more review from the community (e.g. memory allocation, appropriate data types).
 
-For more details see the [milestones](https://github.com/fraunhoferfokus/open-content-decryption-module/milestones) page.
-
 ## License
 
-Copyright 2014 Fraunhofer FOKUS
+Copyright 2014 Fraunhofer FOKUS  
+Copyright 2014 Fraunhofer Linaro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
