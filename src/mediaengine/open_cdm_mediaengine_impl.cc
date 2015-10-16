@@ -23,8 +23,13 @@ namespace media {
 
 OpenCdmMediaengineImpl::OpenCdmMediaengineImpl(char *session_id_val,
                                                uint32_t session_id_len) {
-  media_engine_com_ = new RpcCdmMediaengineHandler(session_id_val,
-                                                   session_id_len, 0, 0);
+  media_engine_com_ = &(RpcCdmMediaengineHandler::getInstance());
+
+  if( !media_engine_com_->CreateMediaEngineSession(session_id_val,
+      session_id_len, 0, 0)) {
+    CDM_DLOG() << "Failed to create media engine session";
+  }
+
   CDM_DLOG() << "Created new media engine impl ";
 }
 
@@ -33,10 +38,13 @@ OpenCdmMediaengineImpl::OpenCdmMediaengineImpl(char *session_id_val,
                                                uint8_t *auth_data_val,
                                                uint32_t auth_data_len) {
   // create media engine session
-  media_engine_com_ = new RpcCdmMediaengineHandler(session_id_val,
+  media_engine_com_ = &(RpcCdmMediaengineHandler::getInstance());
+  if(!media_engine_com_->CreateMediaEngineSession(session_id_val,
                                                    session_id_len,
                                                    auth_data_val,
-                                                   auth_data_len);
+                                                   auth_data_len)) {
+    CDM_DLOG() << "Failed to create media engine session";
+  }
 }
 
 OpenCdmMediaengineImpl::~OpenCdmMediaengineImpl() {

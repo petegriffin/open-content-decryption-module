@@ -511,8 +511,10 @@ void OpenCdm::CloseSession(uint32 promise_id,
     std::map<std::string, OpenCdmPlatformSessionId>::iterator iterator =
         session_id_map.find(web_session_id);
     session_id_map.erase(iterator);
+    CDM_DLOG() << "Resolved promise";
     promise->resolve();
   } else {
+    CDM_DLOG() << "Failed to delete session";
     promise->reject(media::MediaKeys::INVALID_ACCESS_ERROR, 0,
                     "Session does not exist.");
     return;

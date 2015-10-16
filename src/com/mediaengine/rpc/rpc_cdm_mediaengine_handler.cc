@@ -22,19 +22,14 @@
 namespace media {
 
 std::string rpcServer = "localhost";
-// TODO(ska): outsource to config
 
-RpcCdmMediaengineHandler::RpcCdmMediaengineHandler(char *session_id_val,
-                                                   uint32_t session_id_len,
-                                                   uint8_t *auth_data_val,
-                                                   uint32_t auth_data_len) {
+RpcCdmMediaengineHandler& RpcCdmMediaengineHandler::getInstance() {
+  static  RpcCdmMediaengineHandler instance;
+  return instance;
+}
+
+RpcCdmMediaengineHandler::RpcCdmMediaengineHandler() {
   CDM_DLOG() << "RpcCdmMediaengineHandler::RpcCdmMediaengineHandler";
-
-  sessionId.id = new char[session_id_len];
-  memcpy(sessionId.id, session_id_val, session_id_len);
-  // TODO(ska): do we need this memcpy?
-  sessionId.id = session_id_val;
-  sessionId.idLen = session_id_len;
 
   if ((rpcClient = clnt_create(rpcServer.c_str(), OPEN_CDM, OPEN_CDM_EME_5,
                                "tcp")) == NULL) {
@@ -44,14 +39,7 @@ RpcCdmMediaengineHandler::RpcCdmMediaengineHandler(char *session_id_val,
     CDM_DLOG() << "RpcCdmMediaengineHandler connected to server";
   }
 
-  rpc_response_generic *rpc_response;
-  rpc_request_mediaengine_data rpc_param;
-  rpc_param.session_id.session_id_val = session_id_val;
-  rpc_param.session_id.session_id_len = session_id_len;
-  rpc_param.auth_data.auth_data_val = auth_data_val;
-  rpc_param.auth_data.auth_data_len = auth_data_len;
-
-  // TODO(ska): need to check == 0?
+ // TODO(ska): need to check == 0?
   // if (idXchngShMem == 0) {
   idXchngShMem = AllocateSharedMemory(sizeof(shmem_info));
   if (idXchngShMem < 0) {
@@ -60,7 +48,23 @@ RpcCdmMediaengineHandler::RpcCdmMediaengineHandler(char *session_id_val,
   // }
   shMemInfo = reinterpret_cast<shmem_info *>(MapSharedMemory(idXchngShMem));
 
-  // SHARED MEMORY and SEMAPHORE INITIALIZATION
+}
+
+bool RpcCdmMediaengineHandler::CreateMediaEngineSession(char *session_id_val,
+                                                   uint32_t session_id_len,
+                                                   uint8_t *auth_data_val,
+                                                   uint32_t auth_data_len) {
+  rpc_response_generic *rpc_response;
+
+  // TODO(ska): do we need this memcpy?
+
+  rpc_request_mediaengine_data rpc_param;
+  rpc_param.session_id.session_id_val = session_id_val;
+  rpc_param.session_id.session_id_len = session_id_len;
+  rpc_param.auth_data.auth_data_val = auth_data_val;
+  rpc_param.auth_data.auth_data_len = auth_data_len;
+
+   // SHARED MEMORY and SEMAPHORE INITIALIZATION
   shMemInfo->idSidShMem = 0;
   this->shMemInfo->idIvShMem = 0;
   this->shMemInfo->idSampleShMem = 0;
@@ -88,13 +92,14 @@ RpcCdmMediaengineHandler::RpcCdmMediaengineHandler(char *session_id_val,
       == NULL) {
     CDM_DLOG() << "engine session failed: " << rpcServer.c_str();
     clnt_perror(rpcClient, rpcServer.c_str());
-    exit(5);
+    return false;
   } else {
     CDM_DLOG() << "engine session creation called";
   }
 
   CDM_DLOG() << "create media engine session platform response: "
              << rpc_response->platform_val;
+  return true;
 }
 
 RpcCdmMediaengineHandler::~RpcCdmMediaengineHandler() {

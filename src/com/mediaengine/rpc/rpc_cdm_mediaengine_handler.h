@@ -33,7 +33,9 @@ namespace media {
  */
 class RpcCdmMediaengineHandler : public OpenCdmMediaengineCom {
  public:
-  RpcCdmMediaengineHandler(char *session_id_val, uint32_t session_id_len,
+  static RpcCdmMediaengineHandler& getInstance();
+
+  bool CreateMediaEngineSession(char *session_id_val, uint32_t session_id_len,
                            uint8_t *auth_data_val, uint32_t auth_data_len);
   DecryptResponse Decrypt(const uint8_t *pbIv, uint32_t cbIv,
                                   const uint8_t *pbData, uint32_t cbData,
@@ -42,7 +44,9 @@ class RpcCdmMediaengineHandler : public OpenCdmMediaengineCom {
   ~RpcCdmMediaengineHandler() override;
 
  private:
-  MediaEngineSessionId sessionId;
+  RpcCdmMediaengineHandler();
+  RpcCdmMediaengineHandler(RpcCdmMediaengineHandler const&);
+  void operator=(RpcCdmMediaengineHandler const&);
 
   CLIENT *rpcClient;
 
