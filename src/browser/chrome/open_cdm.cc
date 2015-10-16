@@ -416,13 +416,10 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
         return;
     }
   }
-  CDM_DLOG() << "Creating session" ;
   MediaKeysCreateSessionResponse response = platform_->MediaKeysCreateSession(
       ConvertInitDataType(init_data_type), init_data, init_data_size);
-  CDM_DLOG() << "Resolving promise" ;
   if (response.platform_response == PLATFORM_CALL_SUCCESS) {
     this->session_id_map[web_session_id] = response.session_id;
-    std::string debug_web_session_id = GetChromeSessionId(response.session_id);
     CDM_DLOG() << "New Session promise resolved, last_session_id_: "
                << web_session_id;
     promise->resolve(web_session_id);
@@ -435,13 +432,11 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
    }
     /* Key request */
    const GURL& legacy_destination_url = GURL::EmptyGURL();
-   CDM_DLOG() << "Sending session message" << std::string((char*) response.licence_req.data(), response.licence_req.size());
    host_->OnSessionMessage(web_session_id.data(), web_session_id.length(),
                           cdm::kLicenseRequest,
                           reinterpret_cast<const char*>(response.licence_req.data()),
                           response.licence_req.size(), legacy_destination_url.spec().data(),
                           legacy_destination_url.spec().size());
-  CDM_DLOG() << "Sent session message";
  return;
 }
 
