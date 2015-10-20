@@ -73,8 +73,14 @@ static bool InitializeFFmpegLibraries() {
   return true;
 }
 
-static bool g_ffmpeg_lib_initialized = InitializeFFmpegLibraries();
+#ifdef __GNUC__
+#define UNUSED __attribute__((__unused__))
+#else
+#define UNUSED
+#endif
 
+
+static bool g_ffmpeg_lib_initialized UNUSED = InitializeFFmpegLibraries();
 #endif  // OCDM_USE_FFMPEG_DECODER
 
 // Renewal message header. For prefixed EME, if a key message starts with
