@@ -88,10 +88,10 @@ static bool g_ffmpeg_lib_initialized UNUSED = InitializeFFmpegLibraries();
 // FIXME(jrummell): Remove this once prefixed EME goes away.
 const char kRenewalHeader[] = "RENEWAL";
 
-static const int64 kSecondsPerMinute = 60;
-static const int64 kMsPerSecond = 1000;
-static const int64 kInitialTimerDelayMs = 200;
-static const int64 kMaxTimerDelayMs = 1 * kSecondsPerMinute * kMsPerSecond;
+static const int64_t kSecondsPerMinute = 60;
+static const int64_t kMsPerSecond = 1000;
+static const int64_t kInitialTimerDelayMs = 200;
+static const int64_t kMaxTimerDelayMs = 1 * kSecondsPerMinute * kMsPerSecond;
 
 /* Currently we don't return the status from he CDMI if the keys are added.
  * Whenever there are no keys added we need
@@ -277,7 +277,7 @@ void OpenCdm::ReadyCallback(OpenCdmPlatformSessionId platform_session_id) {
       true, vector_as_array(&keys_vector), keys_vector.size());
 }
 
-void OpenCdm::LoadSession(uint32 promise_id,
+void OpenCdm::LoadSession(uint32_t promise_id,
                            cdm::SessionType session_type,
                            const char* web_session_id,
                            uint32_t web_session_id_length) {
@@ -285,7 +285,7 @@ void OpenCdm::LoadSession(uint32 promise_id,
         NOTIMPLEMENTED();
 }
 
-void OpenCdm::RemoveSession(uint32 promise_id,
+void OpenCdm::RemoveSession(uint32_t promise_id,
                                 const char* web_session_id,
                                 uint32_t web_session_id_length) {
   CDM_DLOG() << __FUNCTION__;
@@ -369,11 +369,11 @@ void OpenCdm::Initialize(bool allow_distinctive_identifier, bool allow_persisten
 
 }
 
-void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
+void OpenCdm::CreateSessionAndGenerateRequest(uint32_t promise_id,
                                                cdm::SessionType session_type,
                                                cdm::InitDataType init_data_type,
-                                               const uint8* init_data,
-                                               uint32 init_data_size) {
+                                               const uint8_t* init_data,
+                                               uint32_t init_data_size) {
   CDM_DLOG() << " OpenCdm::CreateSession promise_id: " << promise_id
              << " - session_type: " << session_type;
 
@@ -385,14 +385,14 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
                      promise_id)));
 
   uint32_t renderer_session_id = next_web_session_id_++;
-  std::vector<std::vector<uint8>> keys;
+  std::vector<std::vector<uint8_t>> keys;
   std::string web_session_id = base::UintToString(renderer_session_id);
 
   if (init_data && init_data_size) {
     switch (init_data_type) {
       case cdm::kWebM:
         keys.push_back(
-            std::vector<uint8>(init_data, init_data + init_data_size));
+            std::vector<uint8_t>(init_data, init_data + init_data_size));
 
         break;
       case cdm::kCenc:
@@ -446,9 +446,9 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32 promise_id,
  return;
 }
 
-void OpenCdm::UpdateSession(uint32 promise_id, const char* web_session_id,
-                            uint32_t web_session_id_size, const uint8* response,
-                            uint32 response_size) {
+void OpenCdm::UpdateSession(uint32_t promise_id, const char* web_session_id,
+                            uint32_t web_session_id_size, const uint8_t* response,
+                            uint32_t response_size) {
   CDM_DLOG() << " OpenCdm::UpdateSession for " << web_session_id;
 
   scoped_ptr<media::SimpleCdmPromise> promise(new media::CdmCallbackPromise<>(
@@ -499,7 +499,7 @@ void OpenCdm::ScheduleNextRenewal() {
     timer_delay_ms_ = std::min(2 * timer_delay_ms_, kMaxTimerDelayMs);
 }
 
-void OpenCdm::CloseSession(uint32 promise_id,
+void OpenCdm::CloseSession(uint32_t promise_id,
                             const char* web_session_id,
                             uint32_t web_session_id_length) {
 
@@ -527,7 +527,7 @@ void OpenCdm::CloseSession(uint32 promise_id,
   }
 }
 
-void OpenCdm::SetServerCertificate(uint32 promise_id,
+void OpenCdm::SetServerCertificate(uint32_t promise_id,
                                    const uint8_t* server_certificate_data,
                                    uint32_t server_certificate_data_size) {
   CDM_DLOG() << " OpenCdm::SetServerCertificate ";
@@ -562,8 +562,8 @@ enum ClearBytesBufferSel {
 };
 
 static void CopySubsamples(const std::vector<SubsampleEntry>& subsamples,
-                           const ClearBytesBufferSel sel, const uint8* src,
-                           uint8* dst) {
+                           const ClearBytesBufferSel sel, const uint8_t* src,
+                           uint8_t* dst) {
   for (size_t i = 0; i < subsamples.size(); i++) {
     const SubsampleEntry& subsample = subsamples[i];
     if (sel == kSrcContainsClearBytes) {
@@ -599,7 +599,7 @@ cdm::Status OpenCdm::Decrypt(const cdm::InputBuffer& encrypted_buffer,
   return cdm::kSuccess;
 }
 
-void OpenCdm::OnPromiseResolved(uint32 promise_id) {
+void OpenCdm::OnPromiseResolved(uint32_t promise_id) {
   host_->OnResolvePromise(promise_id);
 }
 
@@ -791,7 +791,7 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   DCHECK(decrypted_buffer);
 
   //Fixme: We need to remove the memcopy
-  scoped_ptr<uint8[]> out(new uint8[encrypted_buffer.data_size]);
+  scoped_ptr<uint8_t[]> out(new uint8_t[encrypted_buffer.data_size]);
   uint32_t out_size = -1;
 
   if(!keysAddedToCdm)
@@ -874,7 +874,7 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   if (total_encrypted_size <= 0) {
     CDM_DLOG() << "#No need to decrypt no encrypted data";
     *decrypted_buffer = DecoderBuffer::CopyFrom(
-        reinterpret_cast<const uint8*>(sample), sample_size);
+        reinterpret_cast<const uint8_t*>(sample), sample_size);
     return cdm::kSuccess;
   }
 
@@ -884,9 +884,9 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   // copy all encrypted subsamples to a contiguous buffer, decrypt them, then
   // copy the decrypted bytes over the encrypted bytes in the output.
   // TODO(strobe): attempt to reduce number of memory copies
-  scoped_ptr<uint8[]> encrypted_bytes(new uint8[total_encrypted_size]);
+  scoped_ptr<uint8_t[]> encrypted_bytes(new uint8_t[total_encrypted_size]);
   CopySubsamples(subsamples, kSrcContainsClearBytes,
-                 reinterpret_cast<const uint8*>(sample), encrypted_bytes.get());
+                 reinterpret_cast<const uint8_t*>(sample), encrypted_bytes.get());
 
 
   DecryptResponse dr = media_engine_->Decrypt(encrypted_buffer.iv,
@@ -898,7 +898,7 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   DCHECK_EQ(out_size, total_encrypted_size);
 
   scoped_refptr<DecoderBuffer> output = DecoderBuffer::CopyFrom(
-      reinterpret_cast<const uint8*>(sample), sample_size);
+      reinterpret_cast<const uint8_t*>(sample), sample_size);
   CopySubsamples(subsamples, kDstContainsClearBytes, out.get(),
                  output->writable_data());
 
@@ -924,7 +924,7 @@ void OpenCdm::OnQueryOutputProtectionStatus(
 };
 
 
-void OpenCdm::OnSessionCreated(uint32 promise_id,
+void OpenCdm::OnSessionCreated(uint32_t promise_id,
                                const std::string& web_session_id) {
   CDM_DLOG() << "OpenCdm::OnSessionCreated";
   // Save the latest session ID for heartbeat and file IO test messages.
@@ -934,14 +934,14 @@ void OpenCdm::OnSessionCreated(uint32 promise_id,
                                     web_session_id.length());
 }
 
-void OpenCdm::OnSessionLoaded(uint32 promise_id,
+void OpenCdm::OnSessionLoaded(uint32_t promise_id,
                               const std::string& web_session_id) {
   CDM_DLOG() << "OpenCdm::OnSessionLoaded";
 }
 
-void OpenCdm::OnPromiseFailed(uint32 promise_id,
+void OpenCdm::OnPromiseFailed(uint32_t promise_id,
                               MediaKeys::Exception exception_code,
-                              uint32 system_code,
+                              uint32_t system_code,
                               const std::string& error_message) {
   CDM_DLOG() << "OpenCdm::OnPromiseFailed";
 
