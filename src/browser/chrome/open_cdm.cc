@@ -123,7 +123,7 @@ static scoped_refptr<media::DecoderBuffer> CopyDecoderBufferFrom(
     subsamples.push_back(subsample);
   }
 
-  scoped_ptr<media::DecryptConfig> decrypt_config(
+  std::unique_ptr<media::DecryptConfig> decrypt_config(
       new media::DecryptConfig(
           std::string(reinterpret_cast<const char*>(input_buffer.key_id),
                       input_buffer.key_id_size),
@@ -257,7 +257,7 @@ OpenCdm::OpenCdm(OpenCdmHost* host, const std::string& key_system)
   audio_decoder_state_ = cdm::kDeferredInitialization;
   video_decoder_state_ = cdm::kDeferredInitialization;
 
-  platform_ = scoped_ptr<OpenCdmPlatform>(
+  platform_ = std::unique_ptr<OpenCdmPlatform>(
       OpenCdmPlatformInterfaceFactory::Create(this));
 
   platform_->MediaKeys(key_system);
@@ -321,7 +321,7 @@ void OpenCdm::MessageCallback(OpenCdmPlatformSessionId platform_session_id,
 void OpenCdm::OnKeyStatusUpdateCallback(OpenCdmPlatformSessionId platform_session_id,
                                std::string message)
 {
-  scoped_ptr<base::Value> root(base::JSONReader().ReadToValue(message));
+  std::unique_ptr<base::Value> root(base::JSONReader().ReadToValue(message));
 
 
   if (!root.get() || root->GetType() != base::Value::TYPE_DICTIONARY) {
@@ -334,7 +334,7 @@ void OpenCdm::OnKeyStatusUpdateCallback(OpenCdmPlatformSessionId platform_sessio
   for (base::DictionaryValue::Iterator itr(*dict); !itr.IsAtEnd();
         itr.Advance())
   {
-    scoped_ptr<CdmKeyInformation> key_info(new CdmKeyInformation);
+    std::unique_ptr<CdmKeyInformation> key_info(new CdmKeyInformation);
     key_info->key_id.assign(itr.key().begin(), itr.key().end());
 
     /* FIXME: We ignore returned key statuses. Set all keys usable.
@@ -377,7 +377,7 @@ void OpenCdm::CreateSessionAndGenerateRequest(uint32_t promise_id,
   CDM_DLOG() << " OpenCdm::CreateSession promise_id: " << promise_id
              << " - session_type: " << session_type;
 
-  scoped_ptr<media::NewSessionCdmPromise> promise(
+  std::unique_ptr<media::NewSessionCdmPromise> promise(
       new media::CdmCallbackPromise<std::string>(
           base::Bind(&OpenCdm::OnSessionCreated, base::Unretained(this),
                      promise_id),
@@ -451,7 +451,7 @@ void OpenCdm::UpdateSession(uint32_t promise_id, const char* web_session_id,
                             uint32_t response_size) {
   CDM_DLOG() << " OpenCdm::UpdateSession for " << web_session_id;
 
-  scoped_ptr<media::SimpleCdmPromise> promise(new media::CdmCallbackPromise<>(
+  std::unique_ptr<media::SimpleCdmPromise> promise(new media::CdmCallbackPromise<>(
       base::Bind(&OpenCdm::OnPromiseResolved, base::Unretained(this),
                  promise_id),
       base::Bind(&OpenCdm::OnPromiseFailed, base::Unretained(this),
@@ -504,7 +504,7 @@ void OpenCdm::CloseSession(uint32_t promise_id,
                             uint32_t web_session_id_length) {
 
   CDM_DLOG() << " OpenCdm::CloseSession";
-  scoped_ptr<media::SimpleCdmPromise> promise(new media::CdmCallbackPromise<>(
+  std::unique_ptr<media::SimpleCdmPromise> promise(new media::CdmCallbackPromise<>(
       base::Bind(
           &OpenCdm::OnPromiseResolved, base::Unretained(this), promise_id),
       base::Bind(
@@ -791,7 +791,7 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   DCHECK(decrypted_buffer);
 
   //Fixme: We need to remove the memcopy
-  scoped_ptr<uint8_t[]> out(new uint8_t[encrypted_buffer.data_size]);
+  std::unique_ptr<uint8_t[]> out(new uint8_t[encrypted_buffer.data_size]);
   uint32_t out_size = -1;
 
   if(!keysAddedToCdm)
@@ -884,7 +884,7 @@ cdm::Status OpenCdm::DecryptToMediaDecoderBuffer(
   // copy all encrypted subsamples to a contiguous buffer, decrypt them, then
   // copy the decrypted bytes over the encrypted bytes in the output.
   // TODO(strobe): attempt to reduce number of memory copies
-  scoped_ptr<uint8_t[]> encrypted_bytes(new uint8_t[total_encrypted_size]);
+  std::unique_ptr<uint8_t[]> encrypted_bytes(new uint8_t[total_encrypted_size]);
   CopySubsamples(subsamples, kSrcContainsClearBytes,
                  reinterpret_cast<const uint8_t*>(sample), encrypted_bytes.get());
 
