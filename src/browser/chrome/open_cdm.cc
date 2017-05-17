@@ -609,9 +609,6 @@ cdm::Status OpenCdm::InitializeAudioDecoder(
     const cdm::AudioDecoderConfig& audio_decoder_config) {
   CDM_DLOG() << "OpenCdm::InitializeAudioDecoder()";
 
-  if (key_system_ == media::kExternalOpenCdmKeySystem)
-    return cdm::kSessionError;
-
 #if defined(OCDM_USE_FFMPEG_DECODER)
   if (!audio_decoder_)
     audio_decoder_.reset(new media::FFmpegCdmAudioDecoder(host_));
