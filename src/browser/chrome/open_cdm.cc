@@ -613,8 +613,10 @@ cdm::Status OpenCdm::InitializeAudioDecoder(
   if (!audio_decoder_)
     audio_decoder_.reset(new media::FFmpegCdmAudioDecoder(host_));
 
-  if (!audio_decoder_->Initialize(audio_decoder_config))
+  if (!audio_decoder_->Initialize(audio_decoder_config)) {
+    CDM_DLOG() << "audio_decoder_->Initialize failed";
     return cdm::kSessionError;
+  }
 
   return cdm::kSuccess;
 #elif defined(OPEN_CDM_USE_FAKE_AUDIO_DECODER)
@@ -636,13 +638,15 @@ cdm::Status OpenCdm::InitializeVideoDecoder(
 #if defined(OCDM_USE_FFMPEG_DECODER)
   if (video_decoder_ && video_decoder_->is_initialized()) {
     DCHECK(!video_decoder_->is_initialized());
+    CDM_DLOG() << "video_decoder_->is_initialized() failed\n";
     return cdm::kSessionError;
   }
   // Any uninitialized decoder will be replaced.
   video_decoder_ = CreateVideoDecoder(host_, video_decoder_config);
-  if (!video_decoder_)
-  return cdm::kSessionError;
-  CDM_DLOG() << "VideoDecoder initialized";
+  if (!video_decoder_) {
+    CDM_DLOG() << "CreateVideoDecoder failed\n";
+    return cdm::kSessionError;
+  }
 
   return cdm::kSuccess;
 #else
