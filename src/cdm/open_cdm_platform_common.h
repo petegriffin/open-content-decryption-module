@@ -42,14 +42,25 @@ struct OpenCdmPlatformSessionId {
 
 struct MediaKeysResponse : public PlatformResponse {
 };
+struct MediaKeySetServerCertificateResponse : public PlatformResponse {
+};
+struct MediaKeyTypeResponse : public PlatformResponse {
+};
 struct MediaKeysCreateSessionResponse : public PlatformResponse {
   OpenCdmPlatformSessionId session_id;
   std::string licence_req;
 };
+
+struct MediaKeySessionRemoveResponse : public PlatformResponse {
+};
+struct MediaKeySessionCloseResponse : public PlatformResponse {
+};
 struct MediaKeysLoadSessionResponse : public PlatformResponse {
 };
+
 struct MediaKeySessionUpdateResponse : public PlatformResponse {
 };
+
 struct MediaKeySessionReleaseResponse : public PlatformResponse {
 };
 
