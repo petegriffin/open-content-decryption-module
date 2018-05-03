@@ -27,6 +27,7 @@ namespace media {
 
 #ifdef OCDM_USE_PLAYREADY
 const std::string open_cdm_key_system = "com.microsoft.playready";
+const std::string open_cdm_key_system_youtube = "com.youtube.playready";
 #else
 #ifdef CLEAR_KEY_CDM_USE_FFMPEG_DECODER
 const std::string open_cdm_key_system = "org.chromium.externalclearkey";
@@ -51,7 +52,12 @@ class OpenCdmMediaengineFactory {
  */
 OpenCdmMediaengine *OpenCdmMediaengineFactory::Create(
     std::string key_system, OpenCdmPlatformSessionId session_id) {
+  CDM_DLOG() << "key_system " << key_system.c_str();
+#ifdef OCDM_USE_PLAYREADY
+  if (!key_system.compare(open_cdm_key_system) || !key_system.compare(open_cdm_key_system_youtube)) {
+#else
   if (!key_system.compare(open_cdm_key_system)) {
+#endif
     CDM_DLOG() << "Instantiate OpenCdmMediaengineImpl!";
     return new OpenCdmMediaengineImpl(session_id.session_id,
                                       session_id.session_id_len);
