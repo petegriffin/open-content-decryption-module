@@ -114,8 +114,6 @@ int OpenCdm::GetKeyMessage(std::string& challenge, int* challengeLength,
     strncpy((char*)licenseURL, (const char*)m_dest_url.c_str(), m_dest_url.length());
     *challengeLength = m_message.length();
     *urlLength = m_dest_url.length();
-    char msg[m_message.length()];
-    m_message.copy( msg, m_message.length() , 0);
     CDM_DLOG() << "setting m_eState to KEY_SESSION_WAITING_FOR_LICENSE";
     m_eState = KEY_SESSION_WAITING_FOR_LICENSE;
   }
