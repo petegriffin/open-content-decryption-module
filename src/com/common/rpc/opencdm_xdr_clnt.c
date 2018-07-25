@@ -96,7 +96,7 @@ rpc_open_cdm_mediakeysession_update_1(rpc_request_session_update *argp, CLIENT *
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}
-        int i;
+
 	return (&clnt_res);
 }
 
