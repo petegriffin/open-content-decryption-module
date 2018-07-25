@@ -54,7 +54,7 @@ bool RpcCdmMediaengineHandler::CreateMediaEngineSession(char *session_id_val,
                                                    uint32_t session_id_len,
                                                    uint8_t *auth_data_val,
                                                    uint32_t auth_data_len) {
-  rpc_response_generic *rpc_response;
+  rpc_response_create_mediaengine_session *rpc_response;
 
   // TODO(ska): do we need this memcpy?
 
@@ -99,7 +99,9 @@ bool RpcCdmMediaengineHandler::CreateMediaEngineSession(char *session_id_val,
   }
 
   CDM_DLOG() << "create media engine session platform response: "
-             << rpc_response->platform_val;
+             << rpc_response->platform_val << ", socket channel ID: "
+             << rpc_response->socket_channel_id;
+
   return true;
 }
 

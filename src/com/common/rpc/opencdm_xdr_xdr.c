@@ -149,6 +149,17 @@ xdr_rpc_response_generic (XDR *xdrs, rpc_response_generic *objp)
 }
 
 bool_t
+xdr_rpc_response_create_mediaengine_session (XDR *xdrs, rpc_response_create_mediaengine_session *objp)
+{
+
+	 if (!xdr_int (xdrs, &objp->platform_val))
+		 return FALSE;
+	 if (!xdr_int (xdrs, &objp->socket_channel_id))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
 xdr_rpc_response_create_session (XDR *xdrs, rpc_response_create_session *objp)
 {
 

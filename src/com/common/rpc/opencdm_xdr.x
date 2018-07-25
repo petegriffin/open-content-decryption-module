@@ -71,6 +71,11 @@ struct rpc_response_generic {
     int platform_val;
 };
 
+struct rpc_response_create_mediaengine_session {
+    int platform_val;
+    int socket_channel_id;
+};
+
 struct rpc_response_create_session {
     int platform_val;
     char session_id <>;
