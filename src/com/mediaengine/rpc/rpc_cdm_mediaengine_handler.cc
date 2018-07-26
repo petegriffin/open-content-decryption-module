@@ -19,6 +19,16 @@
 #include <cdm_logging.h>
 #include <opencdm_xdr.h>
 
+#ifdef OCDM_SDP_PROTOTYPE
+#include "socket_client_helper.h"
+#include "ion_allocator_helper.h"
+
+#ifndef ION_SECURE_HEAP_ID_DECODER
+// VPU secure heap ID is required for SDP prototype
+#error "ION_SECURE_HEAP_ID_DECODER is not defined"
+#endif
+#endif
+
 namespace media {
 
 std::string rpcServer = "localhost";
@@ -102,6 +112,14 @@ bool RpcCdmMediaengineHandler::CreateMediaEngineSession(char *session_id_val,
              << rpc_response->platform_val << ", socket channel ID: "
              << rpc_response->socket_channel_id;
 
+#ifdef OCDM_SDP_PROTOTYPE
+  /* Connect to the CDMi Service to allow passing the ION file descriptor
+     at every decrypt operation. */
+  if(this->mSocketClient.Connect(rpc_response->socket_channel_id) < 0) {
+    return false;
+  }
+#endif
+
   return true;
 }
 
@@ -136,8 +154,15 @@ DecryptResponse RpcCdmMediaengineHandler::Decrypt(const uint8_t *pbIv,
   DecryptResponse response;
   response.platform_response = PLATFORM_CALL_SUCCESS;
   response.sys_err = 0;
+#ifdef OCDM_SDP_PROTOTYPE
+  int status = 0;
+  IonAllocator ionAlloc;
+#endif
+
   // TODO(sph): real decryptresponse values need to
   // be written to sharedmem as well
+
+  out_size = 0;
 
   LockSemaphore(idXchngSem, SEM_XCHNG_PUSH);
   CDM_DLOG() << "LOCKed push lock";
@@ -158,8 +183,26 @@ DecryptResponse RpcCdmMediaengineHandler::Decrypt(const uint8_t *pbIv,
 
   memcpy(pSampleShMem, pbData, cbData);
   // delete[] pbData;
-
   CDM_DLOG() << "memcpy pSampleShMem, pbData";
+
+#ifdef OCDM_SDP_PROTOTYPE
+  status = ionAlloc.Allocate(cbData, ION_SECURE_HEAP_ID_DECODER);
+  if(status < 0) {
+    response.platform_response = PLATFORM_CALL_FAIL;
+    goto handle_error;
+  }
+
+  CDM_DLOG() << "FD: " << ionAlloc.GetFileDescriptor() << ", size: " << ionAlloc.GetSize() << " bytes";
+
+  // Send file FD
+  status = this->mSocketClient.SendFileDescriptor(ionAlloc.GetFileDescriptor(), ionAlloc.GetSize());
+  if(status < 0) {
+    CDM_DLOG() << "Failure to send file descriptor";
+    response.platform_response = PLATFORM_CALL_FAIL;
+    goto handle_error;
+  }
+#endif
+
   shMemInfo->idSubsampleDataShMem = 0;
   shMemInfo->subsampleDataSize = 0;
   CDM_DLOG() << "data ready to decrypt";
@@ -169,8 +212,23 @@ DecryptResponse RpcCdmMediaengineHandler::Decrypt(const uint8_t *pbIv,
   CDM_DLOG() << "LOCKed pull lock";
   // process clear data
 
+#ifndef OCDM_SDP_PROTOTYPE
   memcpy(out, pSampleShMem, cbData);
+#else
+  CDM_DLOG() << "COPY secure memory to shared memory";
+  status = ionAlloc.CopyData(out, cbData);
+  if(status < 0) {
+    CDM_DLOG() << "Failure to copy secure data to shared memory";
+    response.platform_response = PLATFORM_CALL_FAIL;
+    goto handle_error;
+  }
+#endif
   out_size = cbData;
+
+#ifdef OCDM_SDP_PROTOTYPE
+handle_error:
+  ionAlloc.Free();
+#endif
 
   CDM_DLOG() << "RUN fired!";
   UnlockSemaphore(idXchngSem, SEM_XCHNG_PUSH);

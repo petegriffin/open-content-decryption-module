@@ -25,6 +25,8 @@
 {
   'variables': {
     'playready%' : 0,
+    'sdp_prototype%' : 0,
+    'ion_secure_heap_id_decoder%' : -1,
 
     'conditions': [
       ['OS == "android"', {
@@ -54,6 +56,22 @@
             }],
             ['playready == 1', { 
               'defines' : [ 'OCDM_USE_PLAYREADY' ],
+            }],
+            ['sdp_prototype == 1', {
+              'defines' : [ 'OCDM_SDP_PROTOTYPE' ],
+              'sources': [
+              '../com/common/socket/socket_client_helper.cpp',
+              '../com/common/socket/socket_client_helper.h',
+              '../com/common/ion/ion_allocator_helper.cpp',
+              '../com/common/ion/ion_allocator_helper.h',
+              ],
+              'include_dirs': [
+              '../com/common/socket',
+              '../com/common/ion',
+              ],
+            }],
+            ['ion_secure_heap_id_decoder != -1', {
+              'defines' : [ 'ION_SECURE_HEAP_ID_DECODER=<(ion_secure_heap_id_decoder)' ],
             }],
             ['use_ffmpeg == 1'  , {
               'sources': [
