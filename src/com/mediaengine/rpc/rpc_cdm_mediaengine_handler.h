@@ -23,6 +23,10 @@
 #include <shmemsem_helper.h>
 #include <open_cdm_mediaengine_com.h>
 
+#ifdef OCDM_SDP_PROTOTYPE
+#include "socket_client_helper.h"
+#endif
+
 namespace media {
 
 /**
@@ -52,6 +56,10 @@ class RpcCdmMediaengineHandler : public OpenCdmMediaengineCom {
   void operator=(RpcCdmMediaengineHandler const&);
 
   CLIENT *rpcClient;
+
+#ifdef OCDM_SDP_PROTOTYPE
+  SocketClient mSocketClient;
+#endif
 
   // shared memory
   shmem_info *shMemInfo;
