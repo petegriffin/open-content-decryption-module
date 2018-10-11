@@ -45,7 +45,7 @@ class PlayreadyKeyProperties : public KeySystemProperties {
         return true;
 
       case media::EmeInitDataType::CENC:
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
         return true;
 #else
         return false;
@@ -59,7 +59,7 @@ class PlayreadyKeyProperties : public KeySystemProperties {
   }
 
   SupportedCodecs GetSupportedCodecs() const override {
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
     return media::EME_CODEC_MP4_ALL | media::EME_CODEC_WEBM_ALL;
 #else
     return media::EME_CODEC_WEBM_ALL;
@@ -121,7 +121,7 @@ class ExternalOpenCdmKeyProperties : public KeySystemProperties {
         return true;
 
       case media::EmeInitDataType::CENC:
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
         return true;
 #else
         return false;
@@ -135,7 +135,7 @@ class ExternalOpenCdmKeyProperties : public KeySystemProperties {
   }
 
   SupportedCodecs GetSupportedCodecs() const override {
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
     return media::EME_CODEC_MP4_ALL | media::EME_CODEC_WEBM_ALL;
 #else
     return media::EME_CODEC_WEBM_ALL;
