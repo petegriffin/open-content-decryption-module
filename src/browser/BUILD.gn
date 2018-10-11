@@ -23,15 +23,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/buildflag_header.gni")
 import("//build/config/features.gni")
 import("//media/cdm/ppapi/cdm_paths.gni")
 import("//media/cdm/ppapi/external_open_cdm/opencdm.gni")
 import("//media/cdm/ppapi/ppapi_cdm_adapter.gni")
 import("//media/media_options.gni")
 
+buildflag_header("opencdm_features") {
+  header = "opencdm_features.h"
+
+  flags = [
+    "OCDM_USE_PLAYREADY=$playready",
+  ]
+}
+
 if (enable_opencdm && enable_library_cdms) {
   shared_library("opencdm") {
     sources = [
+      "//media/cdm/ppapi/cdm_logging.cc",
+      "//media/cdm/ppapi/cdm_logging.h",
       "../../../clear_key_cdm/cdm_host_proxy.h",
       "../../../clear_key_cdm/cdm_host_proxy_impl.h",
       "../../../clear_key_cdm/cdm_video_decoder.cc",
@@ -97,10 +108,6 @@ if (enable_opencdm && enable_library_cdms) {
       ldflags += [
         "-Wl,-Bsymbolic",
       ]
-    }
-
-    if (playready) {
-      defines += [ "OCDM_USE_PLAYREADY" ]
     }
 
     if (is_mac) {
