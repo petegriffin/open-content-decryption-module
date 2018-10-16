@@ -25,7 +25,7 @@ using namespace media;
 
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
-#ifdef OCDM_USE_PLAYREADY
+#if BUILDFLAG(OCDM_USE_PLAYREADY)
 static const char kPlayreadyKeySystem[] =
     "com.microsoft.playready";
 static const char kPlayreadyPepperType[] =
@@ -179,7 +179,7 @@ class ExternalOpenCdmKeyProperties : public KeySystemProperties {
 #endif
 
 void AddExternalOpenCdmKeySystems(std::vector<std::unique_ptr<KeySystemProperties>>* key_systems) {
-#ifdef OCDM_USE_PLAYREADY
+#if BUILDFLAG(OCDM_USE_PLAYREADY)
   //TODO: AddPlayreadyKeySystem(key_systems);
   key_systems->emplace_back(
     new PlayreadyKeyProperties(kPlayreadyKeySystem));
