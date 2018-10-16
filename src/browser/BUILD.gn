@@ -126,6 +126,7 @@ if (enable_opencdm && enable_library_cdms) {
 
     deps = [
       ":opencdm",
+      ":opencdm_features",
       "//base",
       "//media:shared_memory_support",
       "//ui/gfx/geometry",
@@ -149,5 +150,6 @@ source_set("opencdm_ks") {
     "//content/public/renderer",
     "//media",
     "//media:media_features",   # for ENABLE_LIBRARY_CDMS
+    ":opencdm_features",
   ]
 }
