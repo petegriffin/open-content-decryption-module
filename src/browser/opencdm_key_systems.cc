@@ -20,7 +20,7 @@
 #include "media/base/key_system_properties.h"
 #include "media/media_features.h"
 #include "opencdm_key_systems.h"
-#include "media/cdm/ppapi/external_open_cdm/src/browser/opencdm_features.h"
+#include "opencdm_features.h"
 using namespace media;
 
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)

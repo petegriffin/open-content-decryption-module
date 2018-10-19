@@ -21,7 +21,7 @@
 
 #include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine.h"
 #include "media/cdm/ppapi/external_open_cdm/src/mediaengine/open_cdm_mediaengine_impl.h"
-#include "media/cdm/ppapi/external_open_cdm/src/browser/opencdm_features.h"
+#include "opencdm_features.h"
 #include "media/cdm/ppapi/cdm_logging.h"
 
 namespace media {

@@ -76,6 +76,10 @@ if (enable_opencdm && enable_library_cdms) {
       "../mediaengine/open_cdm_mediaengine_impl.h",
     ]
 
+    include_dirs = [
+      "$target_gen_dir/",
+    ]
+
     # TODO(jschuh): crbug.com/167187 fix size_t to int truncations.
     configs += [ "//build/config/compiler:no_size_t_to_int_warning" ]
 
@@ -142,6 +146,10 @@ source_set("opencdm_ks") {
   sources = [
     "opencdm_key_systems.cc",
     "opencdm_key_systems.h",
+  ]
+
+  include_dirs = [
+      "$target_gen_dir/",
   ]
 
   deps = [
